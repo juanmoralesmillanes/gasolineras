@@ -1,0 +1,15 @@
+{
+  "siteName": "PonLaGasolina",
+  "brandHtml": "PonLa<span class=\"brand-la\">Gasolina</span>",
+  "tagline": "El precio de la gasolina y el diésel en todas las gasolineras de España",
+  "domain": "https://www.ponlagasolina.es",
+  "lang": "es-ES",
+  "contactEmail": "contacto@ponlagasolina.es",
+  "ownerName": "Juan Antonio Morales Millanes",
+  "ownerNif": "76129900S",
+  "ownerAddress": "Calle Florinda Chico, 20, 10840 Moraleja (Cáceres)",
+  "adsense": { "showPlaceholders": false, "client": "ca-pub-7358549833897836", "slots": { "top": "", "inContent": "", "sidebar": "", "bottom": "" } },
+  "analytics": { "gaId": "" },
+  "indexNowKey": "bc5a876a6b2faebf679fa0c125b6ef8f",
+  "legalUpdated": "2026-11-14"
+}

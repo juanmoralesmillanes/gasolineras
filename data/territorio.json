@@ -1,0 +1,337 @@
+{
+"provincias": [
+{
+"id": "01",
+"name": "Araba/Álava",
+"slug": "alava",
+"ccaa": "pais-vasco"
+},
+{
+"id": "02",
+"name": "Albacete",
+"slug": "albacete",
+"ccaa": "castilla-la-mancha"
+},
+{
+"id": "03",
+"name": "Alicante",
+"slug": "alicante",
+"ccaa": "comunidad-valenciana"
+},
+{
+"id": "04",
+"name": "Almería",
+"slug": "almeria",
+"ccaa": "andalucia"
+},
+{
+"id": "05",
+"name": "Ávila",
+"slug": "avila",
+"ccaa": "castilla-y-leon"
+},
+{
+"id": "06",
+"name": "Badajoz",
+"slug": "badajoz",
+"ccaa": "extremadura"
+},
+{
+"id": "07",
+"name": "Illes Balears",
+"slug": "baleares",
+"ccaa": "baleares"
+},
+{
+"id": "08",
+"name": "Barcelona",
+"slug": "barcelona",
+"ccaa": "cataluna"
+},
+{
+"id": "09",
+"name": "Burgos",
+"slug": "burgos",
+"ccaa": "castilla-y-leon"
+},
+{
+"id": "10",
+"name": "Cáceres",
+"slug": "caceres",
+"ccaa": "extremadura"
+},
+{
+"id": "11",
+"name": "Cádiz",
+"slug": "cadiz",
+"ccaa": "andalucia"
+},
+{
+"id": "12",
+"name": "Castellón",
+"slug": "castellon",
+"ccaa": "comunidad-valenciana"
+},
+{
+"id": "13",
+"name": "Ciudad Real",
+"slug": "ciudad-real",
+"ccaa": "castilla-la-mancha"
+},
+{
+"id": "14",
+"name": "Córdoba",
+"slug": "cordoba",
+"ccaa": "andalucia"
+},
+{
+"id": "15",
+"name": "A Coruña",
+"slug": "a-coruna",
+"ccaa": "galicia"
+},
+{
+"id": "16",
+"name": "Cuenca",
+"slug": "cuenca",
+"ccaa": "castilla-la-mancha"
+},
+{
+"id": "17",
+"name": "Girona",
+"slug": "girona",
+"ccaa": "cataluna"
+},
+{
+"id": "18",
+"name": "Granada",
+"slug": "granada",
+"ccaa": "andalucia"
+},
+{
+"id": "19",
+"name": "Guadalajara",
+"slug": "guadalajara",
+"ccaa": "castilla-la-mancha"
+},
+{
+"id": "20",
+"name": "Gipuzkoa",
+"slug": "gipuzkoa",
+"ccaa": "pais-vasco"
+},
+{
+"id": "21",
+"name": "Huelva",
+"slug": "huelva",
+"ccaa": "andalucia"
+},
+{
+"id": "22",
+"name": "Huesca",
+"slug": "huesca",
+"ccaa": "aragon"
+},
+{
+"id": "23",
+"name": "Jaén",
+"slug": "jaen",
+"ccaa": "andalucia"
+},
+{
+"id": "24",
+"name": "León",
+"slug": "leon",
+"ccaa": "castilla-y-leon"
+},
+{
+"id": "25",
+"name": "Lleida",
+"slug": "lleida",
+"ccaa": "cataluna"
+},
+{
+"id": "26",
+"name": "La Rioja",
+"slug": "la-rioja",
+"ccaa": "la-rioja"
+},
+{
+"id": "27",
+"name": "Lugo",
+"slug": "lugo",
+"ccaa": "galicia"
+},
+{
+"id": "28",
+"name": "Madrid",
+"slug": "madrid",
+"ccaa": "madrid"
+},
+{
+"id": "29",
+"name": "Málaga",
+"slug": "malaga",
+"ccaa": "andalucia"
+},
+{
+"id": "30",
+"name": "Murcia",
+"slug": "murcia",
+"ccaa": "murcia"
+},
+{
+"id": "31",
+"name": "Navarra",
+"slug": "navarra",
+"ccaa": "navarra"
+},
+{
+"id": "32",
+"name": "Ourense",
+"slug": "ourense",
+"ccaa": "galicia"
+},
+{
+"id": "33",
+"name": "Asturias",
+"slug": "asturias",
+"ccaa": "asturias"
+},
+{
+"id": "34",
+"name": "Palencia",
+"slug": "palencia",
+"ccaa": "castilla-y-leon"
+},
+{
+"id": "35",
+"name": "Las Palmas",
+"slug": "las-palmas",
+"ccaa": "canarias"
+},
+{
+"id": "36",
+"name": "Pontevedra",
+"slug": "pontevedra",
+"ccaa": "galicia"
+},
+{
+"id": "37",
+"name": "Salamanca",
+"slug": "salamanca",
+"ccaa": "castilla-y-leon"
+},
+{
+"id": "38",
+"name": "Santa Cruz de Tenerife",
+"slug": "santa-cruz-de-tenerife",
+"ccaa": "canarias"
+},
+{
+"id": "39",
+"name": "Cantabria",
+"slug": "cantabria",
+"ccaa": "cantabria"
+},
+{
+"id": "40",
+"name": "Segovia",
+"slug": "segovia",
+"ccaa": "castilla-y-leon"
+},
+{
+"id": "41",
+"name": "Sevilla",
+"slug": "sevilla",
+"ccaa": "andalucia"
+},
+{
+"id": "42",
+"name": "Soria",
+"slug": "soria",
+"ccaa": "castilla-y-leon"
+},
+{
+"id": "43",
+"name": "Tarragona",
+"slug": "tarragona",
+"ccaa": "cataluna"
+},
+{
+"id": "44",
+"name": "Teruel",
+"slug": "teruel",
+"ccaa": "aragon"
+},
+{
+"id": "45",
+"name": "Toledo",
+"slug": "toledo",
+"ccaa": "castilla-la-mancha"
+},
+{
+"id": "46",
+"name": "Valencia",
+"slug": "valencia",
+"ccaa": "comunidad-valenciana"
+},
+{
+"id": "47",
+"name": "Valladolid",
+"slug": "valladolid",
+"ccaa": "castilla-y-leon"
+},
+{
+"id": "48",
+"name": "Bizkaia",
+"slug": "bizkaia",
+"ccaa": "pais-vasco"
+},
+{
+"id": "49",
+"name": "Zamora",
+"slug": "zamora",
+"ccaa": "castilla-y-leon"
+},
+{
+"id": "50",
+"name": "Zaragoza",
+"slug": "zaragoza",
+"ccaa": "aragon"
+},
+{
+"id": "51",
+"name": "Ceuta",
+"slug": "ceuta",
+"ccaa": "ceuta"
+},
+{
+"id": "52",
+"name": "Melilla",
+"slug": "melilla",
+"ccaa": "melilla"
+}
+],
+"ccaa": {
+"andalucia": "Andalucía",
+"aragon": "Aragón",
+"asturias": "Asturias",
+"baleares": "Islas Baleares",
+"canarias": "Canarias",
+"cantabria": "Cantabria",
+"castilla-la-mancha": "Castilla-La Mancha",
+"castilla-y-leon": "Castilla y León",
+"cataluna": "Cataluña",
+"comunidad-valenciana": "Comunidad Valenciana",
+"extremadura": "Extremadura",
+"galicia": "Galicia",
+"la-rioja": "La Rioja",
+"madrid": "Comunidad de Madrid",
+"murcia": "Región de Murcia",
+"navarra": "Navarra",
+"pais-vasco": "País Vasco",
+"ceuta": "Ceuta",
+"melilla": "Melilla"
+}
+}

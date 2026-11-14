@@ -1,0 +1,1 @@
+{ "name": "gasolineras", "private": true, "type": "module", "scripts": { "build": "node build.mjs", "precios": "node scripts/descargar-precios.mjs" }, "engines": { "node": ">=18" } }
