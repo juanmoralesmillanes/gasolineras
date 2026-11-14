@@ -1,4 +1,4 @@
-# PonLaGasolina: precios de todas las gasolineras de España
+# GasolinerasCercanas: precios de todas las gasolineras de España
 
 Web estática con el precio de la gasolina y el diésel en todas las gasolineras de España: páginas por provincia, municipio, marca, combustible y una ficha para cada gasolinera. Usa la misma base que PonLaRadio y TDTenDirecto.
 

@@ -1,7 +1,7 @@
-# Así funciona PonLaGasolina: los precios de todas las gasolineras, cada día
+# Así funciona GasolinerasCercanas: los precios de todas las gasolineras, cada día
 > Qué datos usamos, cada cuánto se actualizan y cómo sacarle partido a la web para pagar menos cada vez que repostas.
 
-PonLaGasolina nace con una idea sencilla: que cualquiera pueda saber en segundos cuál es la gasolinera más barata de su zona.
+GasolinerasCercanas nace con una idea sencilla: que cualquiera pueda saber en segundos cuál es la gasolinera más barata de su zona.
 
 ## De dónde salen los precios
 
