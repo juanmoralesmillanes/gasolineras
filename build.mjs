@@ -63,7 +63,7 @@ const MAIN = ['g95', 'ga', 'g98', 'glp'];
 const low = k => FUEL[k].name.replace(/^./, c => c.toLowerCase());
 const BRANDS = [
   ['repsol', 'Repsol', /\bREPSOL\b/i], ['moeve', 'Moeve (Cepsa)', /\b(CEPSA|MOEVE)\b/i], ['bp', 'BP', /^\s*BP\b/i], ['galp', 'Galp', /\bGALP\b/i], ['shell', 'Shell', /\bSHELL\b/i],
-  ['plenoil', 'Plenoil', /PLENOIL/i], ['ballenoil', 'Ballenoil', /BALLENOIL/i], ['petroprix', 'Petroprix', /PETROPRIX/i], ['petronor', 'Petronor', /PETRONOR/i], ['campsa', 'Campsa', /\bCAMPSA\b/i],
+  ['plenoil', 'Plenoil', /PLENOIL/i], ['plenergy', 'Plenergy', /PLENERGY/i], ['eni', 'Eni', /^\s*ENI\b|\bAGIP\b/i], ['beroil', 'Beroil', /BEROIL/i], ['molgas', 'Molgas', /MOLGAS/i], ['naturgy', 'Naturgy', /NATURGY/i], ['ballenoil', 'Ballenoil', /BALLENOIL/i], ['petroprix', 'Petroprix', /PETROPRIX/i], ['petronor', 'Petronor', /PETRONOR/i], ['campsa', 'Campsa', /\bCAMPSA\b/i],
   ['avia', 'Avia', /\bAVIA\b/i], ['disa', 'DISA', /\bDISA\b/i], ['carrefour', 'Carrefour', /CARREFOUR/i], ['alcampo', 'Alcampo', /ALCAMPO/i], ['eroski', 'Eroski', /EROSKI/i],
   ['eleclerc', 'E.Leclerc', /LECLERC/i], ['bonarea', 'bonÀrea', /BON\s*[AÀ]REA/i], ['esclatoil', 'Esclatoil', /ESCLATOIL/i], ['tamoil', 'Tamoil', /TAMOIL/i], ['meroil', 'Meroil', /MEROIL/i],
   ['gasexpress', 'Gasexpress', /GASEXPRESS/i], ['valcarce', 'Valcarce', /VALCARCE/i], ['petrocat', 'Petrocat', /PETROCAT/i], ['q8', 'Q8', /^\s*Q8\b/i], ['agla', 'Agla', /\bAGLA\b/i]
