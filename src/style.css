@@ -217,3 +217,54 @@ ul.near{padding:0;list-style:none}ul.near li{padding:8px 0;border-bottom:1px das
 .legend .k-g95{color:#0f9d58}.legend .k-ga{color:#ff8a00}
 .st-head .fav{margin-left:auto;align-self:center}
 .hero .btn{margin-top:6px}
+
+/* ---- texto justificado (con guiones para evitar huecos grandes en móvil) */
+main p, .foot p, .guide li, .faq p{text-align:justify;-webkit-hyphens:auto;hyphens:auto;text-wrap:pretty}
+main .updated, main .map-legend, main .legend, .st-head p{text-align:left}
+
+/* ---- portada con ilustración */
+.hero-img{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:32px;align-items:center}
+.hero-art{width:100%;height:auto;display:block;filter:drop-shadow(0 10px 24px rgba(16,38,27,.12))}
+@media (max-width:820px){.hero-img{grid-template-columns:1fr;gap:8px}.hero-art{max-width:460px;margin:0 auto}}
+
+/* ---- tarjetas de precio */
+.stat{position:relative;padding-right:56px}
+.f-ico{position:absolute;right:12px;top:12px;width:36px;height:36px}
+.stat .tank{margin-top:6px;padding-top:6px;border-top:1px dashed var(--line)}
+.stat .tank b{color:var(--text)}
+
+/* ---- mapas */
+.mapbox{margin:10px 0 22px;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:14px;box-shadow:var(--shadow)}
+.mapbox img{width:100%;height:auto;display:block;max-width:820px;margin:0 auto}
+.mapbox figcaption{font-size:.85rem;margin-top:6px}
+.map-tabs{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.map-tabs button{font:inherit;font-size:.9rem;border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;cursor:pointer;color:var(--text)}
+.map-tabs button[aria-selected="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+svg.map{width:100%;max-width:760px;height:auto;display:block;margin:8px 0 4px}
+svg.map a:hover circle{stroke:#10261b;stroke-width:2}
+.map-legend{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:.82rem;color:var(--muted);margin:8px 0}
+.map-legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+
+/* ---- histogramas */
+.chart.hist{margin:6px 0 20px}
+.chart .ax.strong{font-weight:700;fill:#10261b;font-size:12px}
+
+/* ---- barras */
+.bars{list-style:none;padding:0;margin:8px 0 20px}
+.bars li{display:grid;grid-template-columns:minmax(0,200px) minmax(60px,1fr) auto;gap:10px;align-items:center;padding:5px 6px;border-radius:8px}
+.bars li:hover{background:#f0f4f1}
+.b-l{font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.b-l a{text-decoration:none}
+.b-l small{color:var(--muted);margin-left:4px}
+.b-t{background:#eef2ef;border-radius:999px;height:12px;overflow:hidden}
+.b-t i{display:block;height:100%;border-radius:999px}
+.bars b{font-variant-numeric:tabular-nums;font-size:.92rem}
+.bars li.hl{background:#fff8e6}
+@media (max-width:560px){.bars li{grid-template-columns:minmax(0,130px) minmax(40px,1fr) auto;gap:8px}}
+
+/* ---- portadas de guías y blog */
+.guides a{overflow:hidden}
+.g-cover{width:calc(100% + 36px);max-width:none;margin:-16px -18px 10px;height:auto;display:block;aspect-ratio:640/280}
+.g-banner{width:100%;height:auto;border-radius:var(--r);display:block;margin:4px 0 20px;aspect-ratio:640/280}
+.btn{text-align:center}
+@media (max-width:560px){.stat{padding-right:14px}.stat>span{padding-right:34px}.f-ico{width:28px;height:28px;right:10px;top:10px}}

@@ -78,3 +78,12 @@
   btn?.addEventListener('click', () => setMenu(!top.classList.contains('menu-open')));
   addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
 })();
+
+// mapas: cambiar de combustible
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('.map-tabs button'); if (!b) return;
+  const f = b.closest('.mapbox');
+  f.querySelectorAll('.map-tabs button').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  f.querySelector('img').src = `${f.dataset.base}-${b.dataset.k}.svg`;
+  f.querySelectorAll('.map-legend').forEach(l => { l.hidden = l.dataset.k !== b.dataset.k; });
+});

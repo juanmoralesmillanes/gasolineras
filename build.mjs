@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
+import { quantiles, legend, spainMap, areaMap, histogram, bars, fuelIcon, cover } from './src/graficos.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(ROOT, 'dist');
@@ -36,7 +37,7 @@ const SMALL = new Set(['de', 'del', 'la', 'las', 'los', 'el', 'y', 'a', 'en', 'e
 const titleCase = s => String(s || '').toLowerCase().replace(/(^|[\s\-/(])([\p{L}º])/gu, (m, a, b) => a + b.toUpperCase()).split(' ').map((w, i) => i > 0 && SMALL.has(w.toLowerCase()) ? w.toLowerCase() : w).join(' ').replace(/\bS\/n\b/gi, 's/n').replace(/\bKm\b/g, 'km');
 // "Palmas de Gran Canaria (Las)" -> "Las Palmas de Gran Canaria"
 const fixName = s => String(s || '').replace(/^(.*?)\s*\((las|los|la|el|l'|o|a|as|os|es|sa|s')\)$/i, (m, n, art) => `${art.charAt(0).toUpperCase() + art.slice(1).toLowerCase()}${/'$/.test(art) ? '' : ' '}${n}`).trim();
-const ASSET_V = hash(fs.readFileSync(path.join(ROOT, 'src/style.css'), 'utf8') + fs.readFileSync(path.join(ROOT, 'src/app.js'), 'utf8')).toString(36);
+const ASSET_V = hash(fs.readFileSync(path.join(ROOT, 'src/style.css'), 'utf8') + fs.readFileSync(path.join(ROOT, 'src/app.js'), 'utf8') + fs.readFileSync(path.join(ROOT, 'src/graficos.mjs'), 'utf8')).toString(36);
 const faqHtml = faq => `<div class="faq">${faq.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</div>`;
 const faqLd = faq => ({ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: faq.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })) });
 
@@ -60,7 +61,7 @@ const FUEL = {
   h2: { name: 'Hidrógeno', short: 'H2' }, adblue: { name: 'AdBlue', short: 'AdBlue' }, dr: { name: 'Diésel renovable (HVO)', short: 'HVO' }, gr: { name: 'Gasolina renovable', short: 'G. renov.' }
 };
 const MAIN = ['g95', 'ga', 'g98', 'glp'];
-const low = k => FUEL[k].name.replace(/^./, c => c.toLowerCase());
+const low = k => FUEL[k].name.replace(/^.(?=[a-záéíóúñ])/, c => c.toLowerCase());
 const BRANDS = [
   ['repsol', 'Repsol', /\bREPSOL\b/i], ['moeve', 'Moeve (Cepsa)', /\b(CEPSA|MOEVE)\b/i], ['bp', 'BP', /^\s*BP\b/i], ['galp', 'Galp', /\bGALP\b/i], ['shell', 'Shell', /\bSHELL\b/i],
   ['plenoil', 'Plenoil', /PLENOIL/i], ['plenergy', 'Plenergy', /PLENERGY/i], ['eni', 'Eni', /^\s*ENI\b|\bAGIP\b/i], ['beroil', 'Beroil', /BEROIL/i], ['molgas', 'Molgas', /MOLGAS/i], ['naturgy', 'Naturgy', /NATURGY/i], ['ballenoil', 'Ballenoil', /BALLENOIL/i], ['petroprix', 'Petroprix', /PETROPRIX/i], ['petronor', 'Petronor', /PETRONOR/i], ['campsa', 'Campsa', /\bCAMPSA\b/i],
@@ -95,6 +96,7 @@ for (const m of MUNS) m.st = stats(m.list);
 const PROVS = TERR.provincias.map(p => { const list = stations.filter(e => e.idp === p.id); return { ...p, list, st: stats(list), muns: MUNS.filter(m => m.prov.id === p.id).sort((a, b) => b.list.length - a.list.length) }; }).filter(p => p.list.length);
 const P = Object.fromEntries(PROVS.map(p => [p.id, p]));
 const NAT = stats(stations);
+const Q = Object.fromEntries(['g95', 'ga', 'g98', 'gap', 'glp'].map(k => [k, quantiles(stations.map(e => e.p[k]))]));
 const cheapest = (list, k, n = 10) => list.filter(e => e.p[k]).sort((a, b) => a.p[k] - b.p[k]).slice(0, n);
 
 // cercanía (rejilla de 0,1º para no comparar todas con todas)
@@ -123,7 +125,11 @@ ${list.map(e => `<tr><td><a href="/gasolinera/${e.slug}/"><strong>${esc(e.name)}
 </tbody></table></div>`;
 }
 function statCards(st, ref) {
-  return `<div class="stats">${MAIN.filter(k => st[k]).map(k => `<div class="stat"><span>${FUEL[k].name}</span><strong>${eur(st[k].avg)}</strong><small>media${ref && ref[k] ? ` · ${cents(st[k].avg - ref[k].avg)} vs. media nacional` : ''}</small><small>más barata: ${eur(st[k].min)}</small></div>`).join('')}</div>`;
+  return `<div class="stats">${MAIN.filter(k => st[k]).map(k => `<div class="stat">${fuelIcon(k)}<span>${FUEL[k].name}</span><strong>${eur(st[k].avg)}</strong><small>media${ref && ref[k] ? ` · ${cents(st[k].avg - ref[k].avg)} vs. media nacional` : ''}</small><small>más barata: ${eur(st[k].min)}</small><small class="tank">Depósito de 50 l: <b>${(st[k].avg * 50).toFixed(2).replace('.', ',')} €</b></small></div>`).join('')}</div>`;
+}
+// mapa con selector de combustible (las imágenes se cargan solo al verse)
+function mapBox(base, alt, [w, h] = [820, 671], cap = 'Cada punto es una zona con gasolineras; el color indica su precio medio comparado con el resto de España.', fuels = ['g95', 'ga']) {
+  return `<figure class="mapbox" data-base="${base}"><div class="map-tabs" role="tablist">${fuels.map((k, i) => `<button type="button" role="tab" aria-selected="${i === 0}" data-k="${FUEL[k].slug}">${FUEL[k].short === 'Diésel' ? 'Diésel' : FUEL[k].name}</button>`).join('')}</div><img src="${base}-${FUEL[fuels[0]].slug}.svg" alt="${esc(alt)}" loading="lazy" width="${w}" height="${Math.round(h)}">${fuels.map((k, i) => legend(Q[k]).replace('<p class="map-legend"', `<p class="map-legend" data-k="${FUEL[k].slug}"${i ? ' hidden' : ''}`)).join('')}<figcaption class="muted">${cap}</figcaption></figure>`;
 }
 
 function layout({ title, description, canonical, body, jsonld = [], crumbs = [], noindex = false }) {
@@ -177,7 +183,7 @@ ${body}
   <div class="wrap foot-in">
     <div><strong>${esc(cfg.siteName)}</strong><p>${esc(cfg.tagline)}. Precios oficiales del Ministerio para la Transición Ecológica y el Reto Demográfico. Pueden variar a lo largo del día: confirma siempre el precio en el surtidor.</p></div>
     <div><h3>Provincias</h3>${['madrid', 'barcelona', 'valencia', 'sevilla', 'malaga', 'alicante', 'murcia', 'cadiz', 'a-coruna', 'bizkaia'].filter(s => PROV_BY_SLUG[s]).map(s => `<a href="/provincia/${s}/">Gasolineras en ${PROV_BY_SLUG[s].name}</a>`).join('')}<a href="/provincias/">Todas las provincias</a></div>
-    <div><h3>Combustibles</h3>${['g95', 'ga', 'g98', 'gap', 'glp'].map(k => `<a href="/combustible/${FUEL[k].slug}/">Precio ${FUEL[k].name.toLowerCase()}</a>`).join('')}</div>
+    <div><h3>Combustibles</h3>${['g95', 'ga', 'g98', 'gap', 'glp'].map(k => `<a href="/combustible/${FUEL[k].slug}/">Precio ${low(k)}</a>`).join('')}</div>
     <div><h3>Información</h3><a href="/blog/">Blog</a><a href="/guias/">Guías</a><a href="/sobre-nosotros/">Sobre nosotros</a><a href="/contacto/">Contacto</a><a href="/aviso-legal/">Aviso legal</a><a href="/privacidad/">Política de privacidad</a><a href="/cookies/">Política de cookies</a>${cfg.analytics?.gaId ? '<a href="#" data-cookies>Preferencias de cookies</a>' : ''}</div>
   </div>
   <p class="wrap copy">© ${YEAR} ${esc(cfg.siteName)} · Fuente de los precios: Geoportal de Hidrocarburos, Ministerio para la Transición Ecológica y el Reto Demográfico.</p>
@@ -220,6 +226,7 @@ function readMdDir(dir, isBlog) {
 }
 const GUIDES = readMdDir('data/guias', false);
 const BLOG = readMdDir('data/blog', true).filter(b => b.date <= new Date().toISOString().slice(0, 10)).sort((a, b) => b.date.localeCompare(a.date));
+const guideLi = g => `<li><a href="/guias/${g.slug}/"><img class="g-cover" src="/img/guias/${g.slug}.svg" alt="" loading="lazy" width="640" height="280"><strong>${esc(g.title)}</strong><span>${esc(g.description)}</span></a></li>`;
 const fmtFecha = d => new Date(d + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Madrid' });
 
 // ---------------------------------------------------------------- páginas
@@ -240,6 +247,19 @@ async function main() {
   write('site.webmanifest', JSON.stringify({ name: cfg.siteName, short_name: cfg.siteName, start_url: '/', display: 'standalone', background_color: '#10261b', theme_color: '#10261b', lang: cfg.lang, icons: [{ src: '/icon-192.png', sizes: '192x192', type: 'image/png' }, { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }] }));
   // datos para el buscador y "cerca de mí"
   write('data/municipios.json', JSON.stringify(MUNS.map(m => ({ s: m.slug, n: m.name, p: m.prov.name, c: m.list.length, g: m.st.g95?.min || null, d: m.st.ga?.min || null }))));
+  // ilustraciones y mapas (SVG propios)
+  fs.mkdirSync(path.join(OUT, 'img'), { recursive: true });
+  for (const f of fs.readdirSync(path.join(ROOT, 'src/img'))) fs.copyFileSync(path.join(ROOT, 'src/img', f), path.join(OUT, 'img', f));
+  for (const k of ['g95', 'ga', 'g98', 'gap', 'glp']) write(`img/mapa-espana-${FUEL[k].slug}.svg`, spainMap(stations, k, Q[k], { title: `Mapa del precio de ${low(k)} en España` }));
+  for (const p of PROVS) {
+    for (const k of ['g95', 'ga']) {
+      const labels = p.muns.slice(0, 7).map(m => ({ name: m.name, lat: m.list.reduce((a, e) => a + e.lat, 0) / m.list.length, lon: m.list.reduce((a, e) => a + e.lon, 0) / m.list.length }));
+      const svg = areaMap(p.list, k, Q[k], { W: 820, maxH: 680, labels, label: `Mapa de gasolineras de ${p.name}` }).replace('<svg class="map" ', '<svg ');
+      if (svg) { write(`img/mapas/${p.slug}-${FUEL[k].slug}.svg`, svg); p.mapDims = svg.match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/).slice(1).map(Number); }
+    }
+  }
+  for (const g of GUIDES) write(`img/guias/${g.slug}.svg`, cover(g.slug));
+  for (const b of BLOG) write(`img/blog/${b.slug}.svg`, cover(b.slug));
   write('data/gasolineras.json', JSON.stringify(stations.map(e => [e.slug, e.name, e.munName, Math.round(e.lat * 1e4) / 1e4, Math.round(e.lon * 1e4) / 1e4, e.p.g95 || 0, e.p.ga || 0, e.p.g98 || 0, e.p.glp || 0])));
 
   // ------------------------------------------------ inicio
@@ -254,15 +274,21 @@ async function main() {
     title: `Precio de la gasolina hoy: gasolineras más baratas de España | ${cfg.siteName}`,
     description: `Precio de la gasolina y el diésel hoy (${dd}/${mm}/${yyyy}) en las ${stations.length.toLocaleString('es-ES')} gasolineras de España. Encuentra la más barata de tu municipio.`,
     canonical: '/',
-    body: `<section class="hero"><h1>Precio de la gasolina hoy en España</h1><p>Compara los precios oficiales de las ${stations.length.toLocaleString('es-ES')} gasolineras de España y encuentra la más barata de tu municipio. Gratis, sin registro y actualizado cada día.</p>
+    body: `<section class="hero hero-img"><div><h1>Precio de la gasolina hoy en España</h1><p>Compara los precios oficiales de las ${stations.length.toLocaleString('es-ES')} gasolineras de España y encuentra la más barata de tu municipio. Gratis, sin registro y actualizado cada día.</p>
 <form class="search big" action="/buscar/"><input name="q" type="search" placeholder="Escribe tu municipio: Sevilla, Getafe, Moraleja…" aria-label="Buscar municipio"></form>
-<p><a class="btn" href="/cerca/">📍 Gasolineras más baratas cerca de mí</a></p></section>
+<p><a class="btn" href="/cerca/">📍 Gasolineras más baratas cerca de mí</a></p></div><img class="hero-art" src="/img/hero.svg" alt="" width="640" height="400"></section>
 ${updated}
 ${statCards(NAT)}
 ${ad('top')}
+<h2>Mapa del precio de la gasolina en España</h2>
+<p>Así están hoy los precios en todo el país. Las zonas en verde son las más baratas y las rojas, las más caras. Canarias, Ceuta y Melilla tienen impuestos más bajos y casi siempre salen en verde; en la península, las gasolineras automáticas y las de los alrededores de las grandes ciudades suelen tirar los precios a la baja.</p>
+${mapBox('/img/mapa-espana', 'Mapa de España con el precio medio de la gasolina por zonas')}
 <h2>Provincias con la gasolina más barata hoy</h2>
-<div class="cols2"><div><h3>Gasolina 95</h3><ol class="rank">${provRank('g95').slice(0, 10).map(p => `<li><a href="/provincia/${p.slug}/">${p.name}</a> <b>${eur(p.st.g95.avg)}</b></li>`).join('')}</ol></div>
-<div><h3>Diésel</h3><ol class="rank">${provRank('ga').slice(0, 10).map(p => `<li><a href="/provincia/${p.slug}/">${p.name}</a> <b>${eur(p.st.ga.avg)}</b></li>`).join('')}</ol></div></div>
+<div class="cols2"><div><h3>Gasolina 95</h3>${bars(provRank('g95').slice(0, 10).map(p => ({ label: p.name, href: `/provincia/${p.slug}/`, v: p.st.g95.avg })), Q.g95)}</div>
+<div><h3>Diésel</h3>${bars(provRank('ga').slice(0, 10).map(p => ({ label: p.name, href: `/provincia/${p.slug}/`, v: p.st.ga.avg })), Q.ga)}</div></div>
+<h2>¿Cuánto cuesta la gasolina 95 en cada gasolinera?</h2>
+<p>Este gráfico reparte las ${NAT.g95.n.toLocaleString('es-ES')} gasolineras que venden gasolina 95 según su precio. ${(() => { const v = stations.map(e => e.p.g95).filter(Boolean).sort((a, b) => a - b), d = v[Math.floor(v.length * 0.9)] - v[Math.floor(v.length * 0.1)]; return `Entre el 10\u00a0% de gasolineras más baratas y el 10\u00a0% más caras hay unos ${Math.round(d * 100)} céntimos por litro de diferencia: en un depósito de 50 litros son unos ${Math.round(d * 50)} euros, así que comparar antes de repostar sale a cuenta.`; })()}</p>
+${histogram(stations, 'g95', Q.g95, { label: 'Distribución del precio de la gasolina 95 en España', avgV: NAT.g95.avg })}
 <h2>Las 10 gasolineras más baratas de España hoy (diésel)</h2>
 ${stationTable(cheapest(stations, 'ga'), NAT, { showMun: true })}
 ${ad('inContent')}
@@ -270,7 +296,7 @@ ${ad('inContent')}
 <ul class="chips">${PROVS.slice().sort((a, b) => a.name.localeCompare(b.name, 'es')).map(p => `<li><a href="/provincia/${p.slug}/">${p.name} <small>${p.list.length}</small></a></li>`).join('')}</ul>
 <h2>Las ciudades más buscadas</h2>
 <ul class="chips">${MUNS.slice().sort((a, b) => b.list.length - a.list.length).slice(0, 24).map(m => `<li><a href="/gasolineras/${m.slug}/">${esc(m.name)}</a></li>`).join('')}</ul>
-${GUIDES.length ? `<h2>Guías para ahorrar en combustible</h2><ul class="guides">${GUIDES.slice(0, 6).map(g => `<li><a href="/guias/${g.slug}/"><strong>${esc(g.title)}</strong><span>${esc(g.description)}</span></a></li>`).join('')}</ul>` : ''}
+${GUIDES.length ? `<h2>Guías para ahorrar en combustible</h2><ul class="guides">${GUIDES.slice(0, 6).map(guideLi).join('')}</ul>` : ''}
 <section class="prose"><h2>Preguntas frecuentes</h2>${faqHtml(homeFaq)}</section>
 ${ad('bottom')}`,
     jsonld: [{ '@context': 'https://schema.org', '@type': 'WebSite', name: cfg.siteName, url: BASE + '/', potentialAction: { '@type': 'SearchAction', target: BASE + '/buscar/?q={search_term_string}', 'query-input': 'required name=search_term_string' } }, faqLd(homeFaq)]
@@ -299,9 +325,11 @@ ${PROVS.slice().sort((a, b) => (a.st.g95?.avg || 9) - (b.st.g95?.avg || 9)).map(
     const body = `<h1>Gasolineras más baratas de ${p.name} hoy</h1>
 <p class="lead">Precios de la gasolina y el diésel en las ${p.list.length} gasolineras de la provincia de ${p.name}, ordenadas de la más barata a la más cara.</p>
 ${updated}${statCards(p.st, NAT)}${ad('top')}
+${p.mapDims ? `<h2>Mapa de gasolineras de ${p.name}</h2><p>Cada punto es una gasolinera de la provincia. El color compara su precio con el de todas las gasolineras de España: en verde, las más baratas; en rojo, las más caras. Pulsa en un municipio de la tabla de abajo para ver sus precios uno a uno.</p>${mapBox(`/img/mapas/${p.slug}`, `Mapa de las gasolineras de ${p.name} coloreadas por precio`, p.mapDims, 'Cada punto es una gasolinera; el color indica su precio comparado con el resto de España. Los nombres marcan los municipios con más gasolineras.')}` : ''}
 <h2>Las más baratas para diésel</h2>${stationTable(cheapest(p.list, 'ga'), p.st, { showMun: true })}
 <h2>Las más baratas para gasolina 95</h2>${stationTable(cheapest(p.list, 'g95'), p.st, { showMun: true })}
 ${ad('inContent')}
+${(() => { const h = histogram(p.list, 'ga', Q.ga, { label: `Distribución del precio del diésel en ${p.name}`, avgV: p.st.ga?.avg }); return h ? `<h2>Cómo se reparten los precios del diésel en ${p.name}</h2><p>Cada barra agrupa las gasolineras de la provincia con un precio parecido. Cuanto más a la izquierda, más barato. La línea discontinua marca el precio medio de ${p.name}, ${eur(p.st.ga.avg)} por litro.</p>${h}` : ''; })()}
 <h2>Gasolineras por municipio</h2>
 <div class="table-wrap"><table class="prices sortable"><thead><tr><th>Municipio</th><th class="num" data-sort="g95">G95 más barata</th><th class="num" data-sort="ga">Diésel más barato</th><th class="num">Gasolineras</th></tr></thead><tbody>
 ${muns.map(m => `<tr><td><a href="/gasolineras/${m.slug}/">${esc(m.name)}</a></td><td class="num" data-v="${m.st.g95?.min || 99}">${eur2(m.st.g95?.min)}</td><td class="num" data-v="${m.st.ga?.min || 99}">${eur2(m.st.ga?.min)}</td><td class="num">${m.list.length}</td></tr>`).join('')}
@@ -337,6 +365,8 @@ ${muns.map(m => `<tr><td><a href="/gasolineras/${m.slug}/">${esc(m.name)}</a></t
 <p class="lead">${esc(intro)}</p>${updated}
 ${statCards(m.st, p.st).replace(/vs\. media nacional/g, `vs. media de ${esc(p.name)}`)}
 ${ad('top')}
+${n >= 2 ? (() => { const k = m.st.ga && m.st.ga.n >= 2 ? 'ga' : 'g95'; const top = m.list.filter(e => e.p[k]).sort((a, b) => a.p[k] - b.p[k]).slice(0, 12); return `<h2>${low(k).replace(/^./, c => c.toUpperCase())} en ${esc(m.name)}, de más barata a más cara</h2>${bars(top.map(e => ({ label: `${esc(e.name)} <small>${esc(e.addr)}</small>`, href: `/gasolinera/${e.slug}/`, v: e.p[k] })), Q[k])}`; })() : ''}
+${n >= 10 && n <= 150 ? `<h2>Mapa de gasolineras de ${esc(m.name)}</h2>${areaMap(m.list, m.st.ga ? 'ga' : 'g95', Q[m.st.ga ? 'ga' : 'g95'], { W: 760, maxH: 460, link: true, label: `Mapa de las gasolineras de ${m.name}` })}${legend(Q[m.st.ga ? 'ga' : 'g95'], `Precio del ${m.st.ga ? 'diésel' : 'gasolina 95'}`)}` : ''}
 <h2>Todas las gasolineras de ${esc(m.name)}</h2>
 <p class="muted">Pulsa en la cabecera de un combustible para ordenar por precio.</p>
 ${stationTable(list, m.st)}
@@ -381,6 +411,8 @@ ${fuels.map(k => `<tr><td>${FUEL[k].name}</td><td class="num"><strong>${eur(e.p[
 ${ad('top')}
 <div class="st-grid"><div class="prose">
 <h2>¿Es barata esta gasolinera?</h2><p>${esc(verdict)}</p>
+${(() => { const k = e.p.ga ? 'ga' : e.p.g95 ? 'g95' : null; if (!k) return ''; const best = cheaperNear(k)[0]; return bars([{ label: '<strong>Esta gasolinera</strong>', v: e.p[k], hl: true }, ...(m.st[k] && m.st[k].n > 1 ? [{ label: `Media de ${esc(m.name)}`, v: m.st[k].avg }] : []), ...(p.st[k] ? [{ label: `Media de ${esc(p.name)}`, v: p.st[k].avg }] : []), { label: 'Media de España', v: NAT[k].avg }, ...(best ? [{ label: `Más barata a ${best[1].toFixed(1).replace('.', ',')} km`, href: `/gasolinera/${best[0].slug}/`, v: best[0].p[k] }] : [])], Q[k]) + `<p class="muted">Precio del ${k === 'ga' ? 'diésel' : 'gasolina 95'} por litro.</p>`; })()}
+${(() => { const k = e.p.ga ? 'ga' : 'g95'; const pts = [e, ...nearby.map(([o]) => o)]; const byMun = new Map(); for (const o of pts) { if (!byMun.has(o.munName)) byMun.set(o.munName, []); byMun.get(o.munName).push(o); } const labels = [...byMun].sort((a, b) => b[1].length - a[1].length).slice(0, 6).map(([name, l]) => ({ name, lat: l.reduce((a, o) => a + o.lat, 0) / l.length, lon: l.reduce((a, o) => a + o.lon, 0) / l.length })); return pts.length >= 3 ? `<h2>Gasolineras de la zona</h2><p>Esta gasolinera (marcada con un círculo) y las ${pts.length - 1} más cercanas en un radio de 10 km, coloreadas según su precio. Pasa el ratón o pulsa sobre un punto para ver la gasolinera.</p>${areaMap(pts, k, Q[k], { W: 640, maxH: 420, highlight: e, link: true, labels, label: 'Mapa de gasolineras cercanas' })}${legend(Q[k], k === 'ga' ? 'Precio del diésel' : 'Precio de la gasolina 95')}` : ''; })()}
 ${cheaperNear('ga').length ? `<h2>Diésel más barato cerca</h2><ul class="near">${near5('ga')}</ul>` : ''}
 ${cheaperNear('g95').length ? `<h2>Gasolina 95 más barata cerca</h2><ul class="near">${near5('g95')}</ul>` : ''}
 ${ad('inContent')}
@@ -408,15 +440,17 @@ ${ad('bottom')}</article>`;
   for (const k of ['g95', 'ga', 'g98', 'gap', 'glp']) {
     const f = FUEL[k]; if (!NAT[k]) continue;
     const rank = provRank(k);
-    const faq = [[`¿Cuál es el precio medio de ${f.name.toLowerCase()} hoy?`, `${eur(NAT[k].avg)} por litro de media en las ${NAT[k].n.toLocaleString('es-ES')} gasolineras que lo venden, según los datos oficiales del ${FECHA_TXT}.`], [`¿Dónde es más barato?`, `Por provincias, en ${rank.slice(0, 3).map(p => `${p.name} (${eur(p.st[k].avg)})`).join(', ')}. La más cara es ${rank.at(-1).name} (${eur(rank.at(-1).st[k].avg)}).`]];
+    const faq = [[`¿Cuál es el precio medio de ${low(k)} hoy?`, `${eur(NAT[k].avg)} por litro de media en las ${NAT[k].n.toLocaleString('es-ES')} gasolineras que lo venden, según los datos oficiales del ${FECHA_TXT}.`], [`¿Dónde es más barato?`, `Por provincias, en ${rank.slice(0, 3).map(p => `${p.name} (${eur(p.st[k].avg)})`).join(', ')}. La más cara es ${rank.at(-1).name} (${eur(rank.at(-1).st[k].avg)}).`]];
     write(`combustible/${f.slug}/index.html`, layout({
-      title: `Precio ${f.name.toLowerCase()} hoy en España: dónde es más barato | ${cfg.siteName}`,
-      description: `Precio de ${f.name.toLowerCase()} hoy: media de ${eur(NAT[k].avg)}/l en España. Ranking por provincias y las gasolineras más baratas.`,
+      title: `Precio ${low(k)} hoy en España: dónde es más barato | ${cfg.siteName}`,
+      description: `Precio de ${low(k)} hoy: media de ${eur(NAT[k].avg)}/l en España. Ranking por provincias y las gasolineras más baratas.`,
       canonical: `/combustible/${f.slug}/`, crumbs: [['Combustibles', null], [f.name, null]],
-      body: `<h1>Precio ${esc(f.name.toLowerCase())} hoy</h1><p class="lead">Media nacional: <strong>${eur(NAT[k].avg)}</strong> por litro, con precios entre ${eur(NAT[k].min)} y ${eur(NAT[k].max)} en las ${NAT[k].n.toLocaleString('es-ES')} gasolineras que lo venden.</p>${updated}${ad('top')}
+      body: `<h1>Precio ${esc(low(k))} hoy</h1><p class="lead">Media nacional: <strong>${eur(NAT[k].avg)}</strong> por litro, con precios entre ${eur(NAT[k].min)} y ${eur(NAT[k].max)} en las ${NAT[k].n.toLocaleString('es-ES')} gasolineras que lo venden.</p>${updated}${ad('top')}
+<h2>Mapa del precio de ${esc(low(k))} en España</h2><figure class="mapbox"><img src="/img/mapa-espana-${f.slug}.svg" alt="Mapa de España con el precio de ${esc(low(k))} por zonas" loading="lazy" width="820" height="671">${legend(Q[k])}</figure>
 <h2>Las 20 gasolineras más baratas de España</h2>${stationTable(cheapest(stations, k, 20), NAT, { showMun: true })}
 ${ad('inContent')}
-<h2>Precio medio por provincia</h2><ol class="rank">${rank.map(p => `<li><a href="/provincia/${p.slug}/">${p.name}</a> <b>${eur(p.st[k].avg)}</b></li>`).join('')}</ol>
+${(() => { const h = histogram(stations, k, Q[k], { label: `Distribución del precio de ${low(k)}`, avgV: NAT[k].avg }); return h ? `<h2>Cómo se reparten los precios</h2><p>Las ${NAT[k].n.toLocaleString('es-ES')} gasolineras que venden ${esc(low(k))}, agrupadas por precio. La línea discontinua es la media nacional.</p>${h}` : ''; })()}
+<h2>Precio medio por provincia</h2>${bars(rank.map(p => ({ label: p.name, href: `/provincia/${p.slug}/`, v: p.st[k].avg })), Q[k])}
 <section class="prose"><h2>Preguntas frecuentes</h2>${faqHtml(faq)}</section>${ad('bottom')}`,
       jsonld: [faqLd(faq)]
     }));
@@ -435,6 +469,7 @@ ${ad('inContent')}
 ${brandList.sort((a, b) => b.list.length - a.list.length).map(b => `<tr><td><a href="/marca/${b.slug}/"><strong>${esc(b.name)}</strong></a></td>${MAIN.slice(0, 3).map(k => `<td class="num${priceCls(b.st[k]?.avg, NAT[k])}" data-v="${b.st[k]?.avg || 99}">${eur2(b.st[k]?.avg)}</td>`).join('')}<td class="num">${b.list.length}</td></tr>`).join('')}
 <tr><td><strong>Independientes y otras</strong></td>${MAIN.slice(0, 3).map(k => `<td class="num">${eur2(stats(indep)[k]?.avg)}</td>`).join('')}<td class="num">${indep.length}</td></tr>
 </tbody></table></div>
+<h2>Precio medio de la gasolina 95 por marca</h2>${bars(brandList.filter(b => b.st.g95).sort((a, b) => a.st.g95.avg - b.st.g95.avg).map(b => ({ label: esc(b.name), href: `/marca/${b.slug}/`, v: b.st.g95.avg })), Q.g95)}
 <section class="prose"><p>Las gasolineras automáticas y de bajo coste, como Plenoil, Ballenoil o Petroprix, suelen tener precios por debajo de la media. Las grandes marcas compensan con programas de fidelización y descuentos con tarjeta o aplicación, que no se reflejan en el precio del surtidor.</p></section>${ad('bottom')}`
   }));
   addUrl('/marcas/', '0.8');
@@ -487,19 +522,18 @@ ${ad('inContent')}
   addUrl('/cerca/', '0.9');
 
   // ------------------------------------------------ guías y blog
-  const guideLi = g => `<li><a href="/guias/${g.slug}/"><strong>${esc(g.title)}</strong><span>${esc(g.description)}</span></a></li>`;
   write('guias/index.html', layout({ title: `Guías para ahorrar en gasolina | ${cfg.siteName}`, description: 'Guías prácticas para gastar menos en combustible: cuándo repostar, cómo conducir, descuentos y qué combustible elegir.', canonical: '/guias/', crumbs: [['Guías', null]], body: `<h1>Guías para ahorrar en combustible</h1>${ad('top')}<ul class="guides">${GUIDES.map(guideLi).join('')}</ul>${ad('bottom')}` }));
   addUrl('/guias/', '0.7');
   for (const g of GUIDES) {
     let n = 0; const html = md(g.md).replace(/<h2>/g, x => (++n === 2 ? ad('inContent') + x : x));
-    write(`guias/${g.slug}/index.html`, layout({ title: `${g.title} | ${cfg.siteName}`, description: g.description.slice(0, 158), canonical: `/guias/${g.slug}/`, crumbs: [['Guías', '/guias/'], [g.title, null]], body: `<article class="prose guide"><h1>${esc(g.title)}</h1><p class="lead">${esc(g.description)}</p>${ad('top')}${html}</article><h2>Más guías</h2><ul class="guides">${GUIDES.filter(x => x !== g).slice(0, 4).map(guideLi).join('')}</ul>${ad('bottom')}`, jsonld: [{ '@context': 'https://schema.org', '@type': 'Article', headline: g.title, description: g.description, author: { '@type': 'Organization', name: cfg.siteName }, mainEntityOfPage: `${BASE}/guias/${g.slug}/` }] }));
+    write(`guias/${g.slug}/index.html`, layout({ title: `${g.title} | ${cfg.siteName}`, description: g.description.slice(0, 158), canonical: `/guias/${g.slug}/`, crumbs: [['Guías', '/guias/'], [g.title, null]], body: `<article class="prose guide"><h1>${esc(g.title)}</h1><p class="lead">${esc(g.description)}</p><img class="g-banner" src="/img/guias/${g.slug}.svg" alt="" width="640" height="280">${ad('top')}${html}</article><h2>Más guías</h2><ul class="guides">${GUIDES.filter(x => x !== g).slice(0, 4).map(guideLi).join('')}</ul>${ad('bottom')}`, jsonld: [{ '@context': 'https://schema.org', '@type': 'Article', headline: g.title, description: g.description, author: { '@type': 'Organization', name: cfg.siteName }, mainEntityOfPage: `${BASE}/guias/${g.slug}/` }] }));
     addUrl(`/guias/${g.slug}/`, '0.7');
   }
-  const blogLi = b => `<li><a href="/blog/${b.slug}/"><small class="muted">${fmtFecha(b.date)}</small><strong>${esc(b.title)}</strong><span>${esc(b.description)}</span></a></li>`;
+  const blogLi = b => `<li><a href="/blog/${b.slug}/"><img class="g-cover" src="/img/blog/${b.slug}.svg" alt="" loading="lazy" width="640" height="280"><small class="muted">${fmtFecha(b.date)}</small><strong>${esc(b.title)}</strong><span>${esc(b.description)}</span></a></li>`;
   write('blog/index.html', layout({ title: `Blog: actualidad del precio de los carburantes | ${cfg.siteName}`, description: 'Noticias y análisis sobre el precio de la gasolina y el diésel en España.', canonical: '/blog/', crumbs: [['Blog', null]], body: `<h1>Blog</h1>${ad('top')}<ul class="guides">${BLOG.map(blogLi).join('')}</ul>${ad('bottom')}` }));
   addUrl('/blog/', '0.6');
   for (const b of BLOG) {
-    write(`blog/${b.slug}/index.html`, layout({ title: `${b.title} | ${cfg.siteName}`, description: b.description.slice(0, 158), canonical: `/blog/${b.slug}/`, crumbs: [['Blog', '/blog/'], [b.title, null]], body: `<article class="prose guide"><h1>${esc(b.title)}</h1><p class="lead">${esc(b.description)}</p><p class="muted">Publicado el ${fmtFecha(b.date)}</p>${ad('top')}${md(b.md)}</article>${ad('bottom')}`, jsonld: [{ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: b.title, datePublished: b.date, author: { '@type': 'Organization', name: cfg.siteName }, mainEntityOfPage: `${BASE}/blog/${b.slug}/` }] }));
+    write(`blog/${b.slug}/index.html`, layout({ title: `${b.title} | ${cfg.siteName}`, description: b.description.slice(0, 158), canonical: `/blog/${b.slug}/`, crumbs: [['Blog', '/blog/'], [b.title, null]], body: `<article class="prose guide"><h1>${esc(b.title)}</h1><p class="lead">${esc(b.description)}</p><p class="muted">Publicado el ${fmtFecha(b.date)}</p><img class="g-banner" src="/img/blog/${b.slug}.svg" alt="" width="640" height="280">${ad('top')}${md(b.md)}</article>${ad('bottom')}`, jsonld: [{ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: b.title, datePublished: b.date, author: { '@type': 'Organization', name: cfg.siteName }, mainEntityOfPage: `${BASE}/blog/${b.slug}/` }] }));
     addUrl(`/blog/${b.slug}/`, '0.6');
   }
 

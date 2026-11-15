@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" role="img" aria-label="Ilustración de una gasolinera con dos surtidores, un coche y un cartel de precios">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3f4ea"/><stop offset="1" stop-color="#f5f7f4"/></linearGradient>
+    <linearGradient id="can" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1d3a2b"/><stop offset="1" stop-color="#10261b"/></linearGradient>
+  </defs>
+  <rect width="640" height="400" rx="28" fill="url(#sky)"/>
+  <circle cx="548" cy="64" r="30" fill="#ffb020" opacity=".9"/>
+  <g fill="#cfe5d7"><path d="M0 300 C80 250 150 262 230 280 S380 240 470 262 600 250 640 262 V310 H0Z"/></g>
+  <rect y="296" width="640" height="104" fill="#dfe9e2"/>
+  <rect y="322" width="640" height="56" fill="#2b3a32"/>
+  <g stroke="#f5f7f4" stroke-width="5" stroke-dasharray="26 22"><path d="M0 350 H640"/></g>
+  <!-- marquesina -->
+  <rect x="118" y="86" width="372" height="40" rx="10" fill="url(#can)"/>
+  <rect x="118" y="124" width="372" height="9" fill="#0f9d58"/>
+  <text x="304" y="114" text-anchor="middle" font-family="system-ui,Segoe UI,Arial,sans-serif" font-size="19" font-weight="800" fill="#fff">GASOLINERA</text>
+  <rect x="146" y="133" width="14" height="168" fill="#c9d6cd"/><rect x="448" y="133" width="14" height="168" fill="#c9d6cd"/>
+  <!-- surtidores -->
+  <g>
+    <rect x="200" y="186" width="72" height="112" rx="12" fill="#0f9d58"/>
+    <rect x="212" y="200" width="48" height="32" rx="5" fill="#e8fff2"/>
+    <text x="236" y="222" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="13" font-weight="700" fill="#10261b">95</text>
+    <rect x="214" y="244" width="44" height="8" rx="4" fill="#0b7a43"/>
+    <path d="M272 214 h14 q10 0 10 10 v44 q0 10 -9 10" fill="none" stroke="#10261b" stroke-width="5" stroke-linecap="round"/>
+    <rect x="192" y="292" width="88" height="10" rx="4" fill="#0b7a43"/>
+  </g>
+  <g>
+    <rect x="330" y="186" width="72" height="112" rx="12" fill="#ffb020"/>
+    <rect x="342" y="200" width="48" height="32" rx="5" fill="#fff8e6"/>
+    <text x="366" y="222" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="13" font-weight="700" fill="#10261b">D</text>
+    <rect x="344" y="244" width="44" height="8" rx="4" fill="#d98e00"/>
+    <path d="M402 214 h14 q10 0 10 10 v44 q0 10 -9 10" fill="none" stroke="#10261b" stroke-width="5" stroke-linecap="round"/>
+    <rect x="322" y="292" width="88" height="10" rx="4" fill="#d98e00"/>
+  </g>
+  <!-- cartel de precios -->
+  <rect x="566" y="168" width="10" height="132" fill="#9fb3a7"/>
+  <rect x="514" y="110" width="114" height="112" rx="12" fill="#fff" stroke="#10261b" stroke-width="4"/>
+  <rect x="514" y="110" width="114" height="28" rx="12" fill="#10261b"/>
+  <text x="571" y="130" text-anchor="middle" font-family="system-ui,Segoe UI,Arial,sans-serif" font-size="13" font-weight="800" fill="#ffb020">PRECIOS</text>
+  <g font-family="ui-monospace,Menlo,monospace" font-size="15" font-weight="700">
+    <text x="526" y="164" fill="#5d6676">G95</text><text x="618" y="164" text-anchor="end" fill="#0b7a43">1,59</text>
+    <text x="526" y="188" fill="#5d6676">DSL</text><text x="618" y="188" text-anchor="end" fill="#0b7a43">1,49</text>
+    <text x="526" y="212" fill="#5d6676">GLP</text><text x="618" y="212" text-anchor="end" fill="#0b7a43">0,89</text>
+  </g>
+  <!-- coche -->
+  <g transform="translate(26 268)">
+    <path d="M8 58 q0-18 18-22 l26-6 l24-24 q6-6 16-6 h52 q10 0 16 8 l20 24 l22 4 q18 4 18 22 v8 q0 6-6 6 H14 q-6 0-6-6z" fill="#e5484d"/>
+    <path d="M84 8 h44 q6 0 10 5 l16 19 H66z" fill="#d7ecf7"/>
+    <rect x="104" y="8" width="5" height="26" fill="#e5484d"/>
+    <circle cx="52" cy="72" r="16" fill="#1a1f29"/><circle cx="52" cy="72" r="7" fill="#c9d6cd"/>
+    <circle cx="164" cy="72" r="16" fill="#1a1f29"/><circle cx="164" cy="72" r="7" fill="#c9d6cd"/>
+    <rect x="196" y="46" width="12" height="7" rx="3" fill="#ffd27a"/>
+  </g>
+</svg>
