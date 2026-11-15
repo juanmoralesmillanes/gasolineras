@@ -5,7 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { quantiles, legend, spainMap, areaMap, histogram, bars, fuelIcon, cover } from './src/graficos.mjs';
+import { quantiles, legend, spainMap, areaMap, histogram, bars, fuelIcon, cover, lineChart } from './src/graficos.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(ROOT, 'dist');
@@ -132,6 +132,19 @@ function mapBox(base, alt, [w, h] = [820, 671], cap = 'Cada punto es una zona co
   return `<figure class="mapbox" data-base="${base}"><div class="map-tabs" role="tablist">${fuels.map((k, i) => `<button type="button" role="tab" aria-selected="${i === 0}" data-k="${FUEL[k].slug}">${FUEL[k].short === 'Diésel' ? 'Diésel' : FUEL[k].name}</button>`).join('')}</div><img src="${base}-${FUEL[fuels[0]].slug}.svg" alt="${esc(alt)}" loading="lazy" width="${w}" height="${Math.round(h)}">${fuels.map((k, i) => legend(Q[k]).replace('<p class="map-legend"', `<p class="map-legend" data-k="${FUEL[k].slug}"${i ? ' hidden' : ''}`)).join('')}<figcaption class="muted">${cap}</figcaption></figure>`;
 }
 
+// evolución de una provincia frente a la media de España
+const HP = HIST.filter(h => h.pr);
+const provChange = (id, k, n) => { const last = HP.at(-1), ref = HP.filter(h => h.d <= addDays(last.d, -n)).at(-1); const a = last?.pr[id]?.[k], b = ref?.pr[id]?.[k]; return a && b ? a - b : null; };
+function provEvol(p) {
+  const pts = HP.filter(h => h.pr[p.id]).slice(-90);
+  if (pts.length < 3) return '';
+  const c7g = provChange(p.id, 0, 7), c7d = provChange(p.id, 1, 7), c30d = provChange(p.id, 1, 30);
+  const s1 = [c7d != null ? `En la última semana el diésel ${Math.abs(c7d) < 0.0005 ? 'se ha mantenido estable' : c7d < 0 ? `ha bajado ${cents(-c7d).replace('+', '')}` : `ha subido ${cents(c7d).replace('+', '')}`} en ${p.name}` : '', c7g != null ? `la gasolina 95 ${Math.abs(c7g) < 0.0005 ? 'apenas se ha movido' : c7g < 0 ? `ha bajado ${cents(-c7g).replace('+', '')}` : `ha subido ${cents(c7g).replace('+', '')}`}` : ''].filter(Boolean).join(' y ');
+  const txt = (s1 ? s1 + '.' : '') + (c30d != null ? ` En los últimos 30 días, el diésel acumula ${cents(c30d)} por litro.` : '');
+  return `<h2>Evolución del precio en ${p.name}</h2><p>Precio medio diario de la gasolina 95 y el diésel en la provincia (línea continua) comparado con la media de España (línea discontinua). ${txt}</p>
+${lineChart([{ name: `Gasolina 95 en ${p.name}`, color: '#0f9d58', pts: pts.map(h => [h.d, h.pr[p.id][0]]) }, { name: `Diésel en ${p.name}`, color: '#ff8a00', pts: pts.map(h => [h.d, h.pr[p.id][1]]) }, { name: 'Gasolina 95 en España', color: '#0f9d58', dash: true, pts: pts.map(h => [h.d, h.g95]) }, { name: 'Diésel en España', color: '#ff8a00', dash: true, pts: pts.map(h => [h.d, h.ga]) }], { label: `Evolución del precio de la gasolina en ${p.name}` })}`;
+}
+
 function layout({ title, description, canonical, body, jsonld = [], crumbs = [], noindex = false }) {
   const url = BASE + canonical;
   const bc = crumbs.length ? `<nav class="crumbs" aria-label="Migas de pan"><a href="/">Inicio</a>${crumbs.map(([n, h]) => h ? ` › <a href="${h}">${esc(n)}</a>` : ` › <span>${esc(n)}</span>`).join('')}</nav>` : '';
@@ -184,7 +197,7 @@ ${body}
     <div><strong>${esc(cfg.siteName)}</strong><p>${esc(cfg.tagline)}. Precios oficiales del Ministerio para la Transición Ecológica y el Reto Demográfico. Pueden variar a lo largo del día: confirma siempre el precio en el surtidor.</p></div>
     <div><h3>Provincias</h3>${['madrid', 'barcelona', 'valencia', 'sevilla', 'malaga', 'alicante', 'murcia', 'cadiz', 'a-coruna', 'bizkaia'].filter(s => PROV_BY_SLUG[s]).map(s => `<a href="/provincia/${s}/">Gasolineras en ${PROV_BY_SLUG[s].name}</a>`).join('')}<a href="/provincias/">Todas las provincias</a></div>
     <div><h3>Combustibles</h3>${['g95', 'ga', 'g98', 'gap', 'glp'].map(k => `<a href="/combustible/${FUEL[k].slug}/">Precio ${low(k)}</a>`).join('')}</div>
-    <div><h3>Información</h3><a href="/blog/">Blog</a><a href="/guias/">Guías</a><a href="/sobre-nosotros/">Sobre nosotros</a><a href="/contacto/">Contacto</a><a href="/aviso-legal/">Aviso legal</a><a href="/privacidad/">Política de privacidad</a><a href="/cookies/">Política de cookies</a>${cfg.analytics?.gaId ? '<a href="#" data-cookies>Preferencias de cookies</a>' : ''}</div>
+    <div><h3>Información</h3><a href="/calculadora-ahorro/">Calculadora de ahorro</a><a href="/evolucion-precios/">Evolución de precios</a><a href="/blog/">Blog e informes semanales</a><a href="/guias/">Guías</a><a href="/sobre-nosotros/">Sobre nosotros</a><a href="/contacto/">Contacto</a><a href="/aviso-legal/">Aviso legal</a><a href="/privacidad/">Política de privacidad</a><a href="/cookies/">Política de cookies</a>${cfg.analytics?.gaId ? '<a href="#" data-cookies>Preferencias de cookies</a>' : ''}</div>
   </div>
   <p class="wrap copy">© ${YEAR} ${esc(cfg.siteName)} · Fuente de los precios: Geoportal de Hidrocarburos, Ministerio para la Transición Ecológica y el Reto Demográfico.</p>
 </footer>
@@ -225,7 +238,80 @@ function readMdDir(dir, isBlog) {
   });
 }
 const GUIDES = readMdDir('data/guias', false);
-const BLOG = readMdDir('data/blog', true).filter(b => b.date <= new Date().toISOString().slice(0, 10)).sort((a, b) => b.date.localeCompare(a.date));
+// ---------------------------------------------------------------- informes semanales automáticos (a partir del histórico)
+const addDays = (d, n) => new Date(Date.parse(d + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+const mondayOf = d => addDays(d, -((new Date(d + 'T12:00:00Z').getUTCDay() + 6) % 7));
+const fechaLarga = d => `${+d.slice(8, 10)} de ${MESES[+d.slice(5, 7) - 1]} de ${d.slice(0, 4)}`;
+const rango = (a, b) => a.slice(0, 7) === b.slice(0, 7) ? `del ${+a.slice(8, 10)} al ${fechaLarga(b)}` : a.slice(0, 4) === b.slice(0, 4) ? `del ${fechaLarga(a).replace(/ de \d{4}$/, '')} al ${fechaLarga(b)}` : `del ${fechaLarga(a)} al ${fechaLarga(b)}`;
+const mean = v => { v = v.filter(Boolean); return v.length ? v.reduce((x, y) => x + y, 0) / v.length : null; };
+const pct = (a, b) => `${a >= b ? '+' : '−'}${Math.abs((a - b) / b * 100).toFixed(1).replace('.', ',')} %`;
+const STATION_BY_ID = new Map(stations.map(e => [e.id, e]));
+function weekStats(days) {
+  const w = { days, g95: mean(days.map(h => h.g95)), ga: mean(days.map(h => h.ga)), pr: {} };
+  for (const id of Object.keys(PROV)) {
+    const g = mean(days.map(h => h.pr?.[id]?.[0])), d = mean(days.map(h => h.pr?.[id]?.[1]));
+    if (g || d) w.pr[id] = [g, d];
+  }
+  return w;
+}
+function weeklyReports() {
+  const byWeek = new Map();
+  for (const h of HIST) { const m = mondayOf(h.d); if (!byWeek.has(m)) byWeek.set(m, []); byWeek.get(m).push(h); }
+  const weeks = [...byWeek.keys()].sort();
+  const out = [];
+  for (let i = 1; i < weeks.length; i++) {
+    const mon = weeks[i], sun = addDays(mon, 6), prevMon = weeks[i - 1];
+    if (sun >= TODAY || addDays(prevMon, 7) !== mon) continue;
+    const days = byWeek.get(mon), prevDays = byWeek.get(prevMon);
+    if (days.length < 4 || prevDays.length < 3 || !days.some(h => h.pr)) continue;
+    const W = weekStats(days), P = weekStats(prevDays);
+    const key = 'sem' + mon;
+    const verbo = (a, b, f) => { const o = hash(key) + (f === 'd' ? 1 : 0); return Math.abs(a - b) < 0.0005 ? ['se mantuvo prácticamente igual', 'apenas se movió'][o % 2] : a < b ? ['bajó', 'se abarató', 'cayó'][o % 3] : ['subió', 'se encareció', 'repuntó'][o % 3]; };
+    const g = W.g95 - P.g95, d = W.ga - P.ga;
+    const tit = Math.abs(g) < 0.0005 && Math.abs(d) < 0.0005 ? 'precios estables' : g < 0 && d < 0 ? 'bajan la gasolina y el diésel' : g > 0 && d > 0 ? 'suben la gasolina y el diésel' : g < 0 ? 'baja la gasolina y sube el diésel' : 'sube la gasolina y baja el diésel';
+    const title = `Precio de la gasolina ${rango(mon, sun)}: ${tit}`;
+    const description = `Informe semanal: la gasolina 95 ${verbo(W.g95, P.g95, 'g')} ${Math.abs(g) >= 0.0005 ? `${Math.abs(g * 100).toFixed(1).replace('.', ',')} céntimos` : ''} y el diésel ${verbo(W.ga, P.ga, 'd')} ${Math.abs(d) >= 0.0005 ? `${Math.abs(d * 100).toFixed(1).replace('.', ',')} céntimos` : ''}. Provincias donde más cambia y gasolinera más barata.`.replace(/\s+/g, ' ').replace(/ \./g, '.');
+    // provincias: cambios y ranking
+    const ch = k => Object.keys(W.pr).filter(id => W.pr[id][k] && P.pr[id]?.[k]).map(id => ({ id, p: PROV[id], v: W.pr[id][k], c: W.pr[id][k] - P.pr[id][k] }));
+    const chG = ch(0), chD = ch(1);
+    const lista = (arr, f) => `<ul class="near">${arr.map(x => `<li><a href="/provincia/${x.p.slug}/">${x.p.name}</a> <b>${eur(x.v)}</b> <small class="${x.c < 0 ? 'good' : 'bad'}">${cents(x.c)}</small></li>`).join('')}</ul>`;
+    const bajD = chD.slice().sort((a, b) => a.c - b.c).slice(0, 5).filter(x => x.c < 0), subD = chD.slice().sort((a, b) => b.c - a.c).slice(0, 5).filter(x => x.c > 0);
+    const bajG = chG.slice().sort((a, b) => a.c - b.c).slice(0, 5).filter(x => x.c < 0), subG = chG.slice().sort((a, b) => b.c - a.c).slice(0, 5).filter(x => x.c > 0);
+    const rankG = chG.slice().sort((a, b) => a.v - b.v), rankD = chD.slice().sort((a, b) => a.v - b.v);
+    // gasolinera más barata de la semana
+    const mins = k => days.map(h => h.min?.[k]).filter(Boolean).sort((a, b) => a[1] - b[1])[0];
+    const cheapTxt = k => { const m = mins(k); if (!m) return ''; const st = STATION_BY_ID.get(m[0]); const nom = st ? st.name : titleCase(m[2]) || 'Una gasolinera'; const mun = st ? st.munName : titleCase(fixName(m[3])); const prov = PROV[m[4]]?.name || ''; const link = st ? `<a href="/gasolinera/${st.slug}/">${esc(nom)}</a>` : esc(nom); return `${k === 'g95' ? 'Para gasolina 95' : 'Para diésel'}, el precio más bajo de la semana fue el de ${link}, en ${esc(mun)}${prov && prov !== mun ? ` (${prov})` : ''}: <strong>${eur(m[1])}</strong> por litro.`; };
+    const ctx = HIST.filter(h => h.d > addDays(sun, -28) && h.d <= sun);
+    const chart = lineChart([{ name: 'Gasolina 95', color: '#0f9d58', pts: ctx.map(h => [h.d, h.g95]) }, { name: 'Diésel', color: '#ff8a00', pts: ctx.map(h => [h.d, h.ga]) }], { label: 'Evolución del precio medio en las últimas cuatro semanas' });
+    const tank = (W.g95 - P.g95) * 50;
+    const intro = pick([
+      `Esta semana, ${rango(mon, sun)}, la gasolina 95 ${verbo(W.g95, P.g95, 'g')} en España hasta un precio medio de <strong>${eur(W.g95)}</strong> por litro (${pct(W.g95, P.g95)} respecto a la semana anterior). El diésel ${verbo(W.ga, P.ga, 'd')} y se quedó en <strong>${eur(W.ga)}</strong> de media (${pct(W.ga, P.ga)}).`,
+      `Resumen de la semana ${rango(mon, sun)}: el precio medio del diésel ${verbo(W.ga, P.ga, 'd')} hasta <strong>${eur(W.ga)}</strong> por litro (${cents(d)}), mientras que la gasolina 95 ${verbo(W.g95, P.g95, 'g')} y se situó en <strong>${eur(W.g95)}</strong> (${cents(g)}).`,
+      `Repostar ${W.g95 < P.g95 && W.ga < P.ga ? 'salió algo más barato' : W.g95 > P.g95 && W.ga > P.ga ? 'salió algo más caro' : 'costó más o menos lo mismo'} esta semana, ${rango(mon, sun)}. La gasolina 95 marcó una media de <strong>${eur(W.g95)}</strong> por litro (${cents(g)} frente a la semana anterior) y el diésel, de <strong>${eur(W.ga)}</strong> (${cents(d)}).`
+    ], key);
+    const html = `<p>${intro} Son las medias de los precios que comunican cada día al Ministerio para la Transición Ecológica las ${stations.length.toLocaleString('es-ES')} gasolineras de España.</p>
+<div class="table-wrap"><table class="prices"><thead><tr><th>Combustible</th><th class="num">Esta semana</th><th class="num">Semana anterior</th><th class="num">Cambio</th><th class="num">Depósito de 50 l</th></tr></thead><tbody>
+<tr><td>Gasolina 95</td><td class="num"><strong>${eur(W.g95)}</strong></td><td class="num">${eur(P.g95)}</td><td class="num">${cents(g)}</td><td class="num">${(W.g95 * 50).toFixed(2).replace('.', ',')} €</td></tr>
+<tr><td>Diésel</td><td class="num"><strong>${eur(W.ga)}</strong></td><td class="num">${eur(P.ga)}</td><td class="num">${cents(d)}</td><td class="num">${(W.ga * 50).toFixed(2).replace('.', ',')} €</td></tr>
+</tbody></table></div>
+<p>Para un depósito de 50 litros de gasolina 95, ${Math.abs(tank) < 0.05 ? 'la diferencia con la semana anterior es inapreciable' : `eso supone ${Math.abs(tank).toFixed(2).replace('.', ',')} € ${tank < 0 ? 'menos' : 'más'} que hace una semana`}.</p>
+<h2>Evolución en las últimas cuatro semanas</h2>${chart}
+<h2>Dónde más ha cambiado el precio</h2>
+<div class="cols2"><div><h3>Diésel: mayores bajadas</h3>${bajD.length ? lista(bajD) : '<p>Ninguna provincia bajó el precio esta semana.</p>'}<h3>Diésel: mayores subidas</h3>${subD.length ? lista(subD) : '<p>Ninguna provincia subió el precio esta semana.</p>'}</div>
+<div><h3>Gasolina 95: mayores bajadas</h3>${bajG.length ? lista(bajG) : '<p>Ninguna provincia bajó el precio esta semana.</p>'}<h3>Gasolina 95: mayores subidas</h3>${subG.length ? lista(subG) : '<p>Ninguna provincia subió el precio esta semana.</p>'}</div></div>
+<h2>Provincias más baratas y más caras</h2>
+<p>Con la media de toda la semana, ${rankG[0]?.p.name} fue la provincia con la gasolina 95 más barata (${eur(rankG[0]?.v)}) y ${rankG.at(-1)?.p.name}, la más cara (${eur(rankG.at(-1)?.v)}). En diésel, la más barata fue ${rankD[0]?.p.name} (${eur(rankD[0]?.v)}) y la más cara, ${rankD.at(-1)?.p.name} (${eur(rankD.at(-1)?.v)}).</p>
+${bars(rankG.slice(0, 5).concat(rankG.slice(-3)).map(x => ({ label: x.p.name, href: `/provincia/${x.p.slug}/`, v: x.v })), Q.g95)}
+<p class="muted">Gasolina 95: las cinco provincias más baratas y las tres más caras de la semana.</p>
+<h2>La gasolinera más barata de la semana</h2>
+<p>${cheapTxt('g95')} ${cheapTxt('ga')} ${pick(['Ojo: algunas de las más baratas son de venta restringida o están en Canarias, Ceuta y Melilla, con impuestos más bajos.', 'Recuerda que Canarias, Ceuta y Melilla tienen una fiscalidad distinta y suelen copar los primeros puestos.'], key)}</p>
+<h2>Cómo ahorrar la próxima semana</h2>
+<p>${pick(['Compara antes de repostar: dentro de una misma ciudad la diferencia entre gasolineras suele superar los diez céntimos por litro.', 'Las gasolineras automáticas y de bajo coste suelen estar entre las más baratas de cada municipio, sobre todo en los polígonos y a la salida de las ciudades.', 'Si tienes varias gasolineras en tu ruta habitual, guárdalas en Mis gasolineras y mira cuál está más barata antes de salir.'], key)} Con la <a href="/calculadora-ahorro/">calculadora de ahorro</a> puedes comprobar si te compensa desviarte hasta una gasolinera más barata, y en <a href="/cerca/">cerca de mí</a> ves las más baratas a tu alrededor.</p>`;
+    out.push({ slug: `precio-gasolina-semana-${mon}`, date: addDays(sun, 1), title, description, html, report: true });
+  }
+  return out;
+}
+const BLOG = readMdDir('data/blog', true).concat(weeklyReports()).filter(b => b.date <= TODAY).sort((a, b) => b.date.localeCompare(a.date));
 const guideLi = g => `<li><a href="/guias/${g.slug}/"><img class="g-cover" src="/img/guias/${g.slug}.svg" alt="" loading="lazy" width="640" height="280"><strong>${esc(g.title)}</strong><span>${esc(g.description)}</span></a></li>`;
 const fmtFecha = d => new Date(d + 'T12:00:00Z').toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Madrid' });
 
@@ -276,7 +362,7 @@ async function main() {
     canonical: '/',
     body: `<section class="hero hero-img"><div><h1>Precio de la gasolina hoy en España</h1><p>Compara los precios oficiales de las ${stations.length.toLocaleString('es-ES')} gasolineras de España y encuentra la más barata de tu municipio. Gratis, sin registro y actualizado cada día.</p>
 <form class="search big" action="/buscar/"><input name="q" type="search" placeholder="Escribe tu municipio: Sevilla, Getafe, Moraleja…" aria-label="Buscar municipio"></form>
-<p><a class="btn" href="/cerca/">📍 Gasolineras más baratas cerca de mí</a></p></div><img class="hero-art" src="/img/hero.svg" alt="" width="640" height="400"></section>
+<p class="hero-btns"><a class="btn" href="/cerca/">📍 Gasolineras más baratas cerca de mí</a> <a class="btn ghost" href="/calculadora-ahorro/">🧮 ¿Me compensa ir más lejos?</a></p></div><img class="hero-art" src="/img/hero.svg" alt="" width="640" height="400"></section>
 ${updated}
 ${statCards(NAT)}
 ${ad('top')}
@@ -330,6 +416,7 @@ ${p.mapDims ? `<h2>Mapa de gasolineras de ${p.name}</h2><p>Cada punto es una gas
 <h2>Las más baratas para gasolina 95</h2>${stationTable(cheapest(p.list, 'g95'), p.st, { showMun: true })}
 ${ad('inContent')}
 ${(() => { const h = histogram(p.list, 'ga', Q.ga, { label: `Distribución del precio del diésel en ${p.name}`, avgV: p.st.ga?.avg }); return h ? `<h2>Cómo se reparten los precios del diésel en ${p.name}</h2><p>Cada barra agrupa las gasolineras de la provincia con un precio parecido. Cuanto más a la izquierda, más barato. La línea discontinua marca el precio medio de ${p.name}, ${eur(p.st.ga.avg)} por litro.</p>${h}` : ''; })()}
+${provEvol(p)}
 <h2>Gasolineras por municipio</h2>
 <div class="table-wrap"><table class="prices sortable"><thead><tr><th>Municipio</th><th class="num" data-sort="g95">G95 más barata</th><th class="num" data-sort="ga">Diésel más barato</th><th class="num">Gasolineras</th></tr></thead><tbody>
 ${muns.map(m => `<tr><td><a href="/gasolineras/${m.slug}/">${esc(m.name)}</a></td><td class="num" data-v="${m.st.g95?.min || 99}">${eur2(m.st.g95?.min)}</td><td class="num" data-v="${m.st.ga?.min || 99}">${eur2(m.st.ga?.min)}</td><td class="num">${m.list.length}</td></tr>`).join('')}
@@ -411,7 +498,7 @@ ${fuels.map(k => `<tr><td>${FUEL[k].name}</td><td class="num"><strong>${eur(e.p[
 ${ad('top')}
 <div class="st-grid"><div class="prose">
 <h2>¿Es barata esta gasolinera?</h2><p>${esc(verdict)}</p>
-${(() => { const k = e.p.ga ? 'ga' : e.p.g95 ? 'g95' : null; if (!k) return ''; const best = cheaperNear(k)[0]; return bars([{ label: '<strong>Esta gasolinera</strong>', v: e.p[k], hl: true }, ...(m.st[k] && m.st[k].n > 1 ? [{ label: `Media de ${esc(m.name)}`, v: m.st[k].avg }] : []), ...(p.st[k] ? [{ label: `Media de ${esc(p.name)}`, v: p.st[k].avg }] : []), { label: 'Media de España', v: NAT[k].avg }, ...(best ? [{ label: `Más barata a ${best[1].toFixed(1).replace('.', ',')} km`, href: `/gasolinera/${best[0].slug}/`, v: best[0].p[k] }] : [])], Q[k]) + `<p class="muted">Precio del ${k === 'ga' ? 'diésel' : 'gasolina 95'} por litro.</p>`; })()}
+${(() => { const k = e.p.ga ? 'ga' : e.p.g95 ? 'g95' : null; if (!k) return ''; const best = cheaperNear(k)[0]; return bars([{ label: '<strong>Esta gasolinera</strong>', v: e.p[k], hl: true }, ...(m.st[k] && m.st[k].n > 1 ? [{ label: `Media de ${esc(m.name)}`, v: m.st[k].avg }] : []), ...(p.st[k] ? [{ label: `Media de ${esc(p.name)}`, v: p.st[k].avg }] : []), { label: 'Media de España', v: NAT[k].avg }, ...(best ? [{ label: `Más barata a ${best[1].toFixed(1).replace('.', ',')} km`, href: `/gasolinera/${best[0].slug}/`, v: best[0].p[k] }] : [])], Q[k]) + `<p class="muted">Precio del ${k === 'ga' ? 'diésel' : 'gasolina 95'} por litro.</p>${best ? `<p><a class="btn ghost" href="/calculadora-ahorro/?a=${e.p[k]}&amp;b=${best[0].p[k]}&amp;km=${(best[1] * 2.6).toFixed(1)}">🧮 ¿Te compensa ir a la más barata? Calcúlalo</a></p>` : ''}`; })()}
 ${(() => { const k = e.p.ga ? 'ga' : 'g95'; const pts = [e, ...nearby.map(([o]) => o)]; const byMun = new Map(); for (const o of pts) { if (!byMun.has(o.munName)) byMun.set(o.munName, []); byMun.get(o.munName).push(o); } const labels = [...byMun].sort((a, b) => b[1].length - a[1].length).slice(0, 6).map(([name, l]) => ({ name, lat: l.reduce((a, o) => a + o.lat, 0) / l.length, lon: l.reduce((a, o) => a + o.lon, 0) / l.length })); return pts.length >= 3 ? `<h2>Gasolineras de la zona</h2><p>Esta gasolinera (marcada con un círculo) y las ${pts.length - 1} más cercanas en un radio de 10 km, coloreadas según su precio. Pasa el ratón o pulsa sobre un punto para ver la gasolinera.</p>${areaMap(pts, k, Q[k], { W: 640, maxH: 420, highlight: e, link: true, labels, label: 'Mapa de gasolineras cercanas' })}${legend(Q[k], k === 'ga' ? 'Precio del diésel' : 'Precio de la gasolina 95')}` : ''; })()}
 ${cheaperNear('ga').length ? `<h2>Diésel más barato cerca</h2><ul class="near">${near5('ga')}</ul>` : ''}
 ${cheaperNear('g95').length ? `<h2>Gasolina 95 más barata cerca</h2><ul class="near">${near5('g95')}</ul>` : ''}
@@ -488,21 +575,17 @@ ${ad('inContent')}
   }
 
   // ------------------------------------------------ evolución de precios (histórico)
-  const H = HIST.slice(-90);
-  const chart = (() => {
-    if (H.length < 2) return '<p class="muted">El gráfico se irá completando día a día con los datos oficiales.</p>';
-    const W = 760, Hh = 260, pad = 40, vals = H.flatMap(h => [h.g95, h.ga]).filter(Boolean), lo = Math.min(...vals) - 0.02, hi = Math.max(...vals) + 0.02;
-    const x = i => pad + i * (W - pad * 2) / (H.length - 1), y = v => Hh - pad + (lo - v) * (Hh - pad * 2) / (hi - lo) * -1 * -1 - 0;
-    const Y = v => Hh - pad - (v - lo) * (Hh - pad * 2) / (hi - lo);
-    const line = k => H.map((h, i) => h[k] ? `${i ? 'L' : 'M'}${x(i).toFixed(1)},${Y(h[k]).toFixed(1)}` : '').join('');
-    const ticks = [lo + 0.02, (lo + hi) / 2, hi - 0.02].map(v => `<text x="4" y="${Y(v) + 4}" class="ax">${v.toFixed(2).replace('.', ',')}</text><line x1="${pad}" x2="${W - pad}" y1="${Y(v)}" y2="${Y(v)}" class="grid"/>`).join('');
-    return `<svg viewBox="0 0 ${W} ${Hh}" class="chart" role="img" aria-label="Evolución del precio medio de la gasolina 95 y el diésel">${ticks}<path d="${line('g95')}" class="l-g95"/><path d="${line('ga')}" class="l-ga"/><text x="${pad}" y="${Hh - 10}" class="ax">${H[0].d.split('-').reverse().join('/')}</text><text x="${W - pad}" y="${Hh - 10}" class="ax" text-anchor="end">${H.at(-1).d.split('-').reverse().join('/')}</text></svg><p class="legend"><span class="k-g95">■ Gasolina 95</span> <span class="k-ga">■ Diésel</span></p>`;
-  })();
+  const H = HIST.slice(-120);
+  const chart = lineChart([{ name: 'Gasolina 95', color: '#0f9d58', pts: H.map(h => [h.d, h.g95]) }, { name: 'Diésel', color: '#ff8a00', pts: H.map(h => [h.d, h.ga]) }, { name: 'Gasolina 98', color: '#2563eb', pts: H.map(h => [h.d, h.g98]) }], { label: 'Evolución del precio medio de la gasolina y el diésel en España' }) || '<p class="muted">El gráfico se irá completando día a día con los datos oficiales.</p>';
+  const provTable = HP.length >= 2 ? `<h2>Cómo ha cambiado el precio en cada provincia</h2><p>Variación del precio medio en la última semana y en los últimos 30 días. Pulsa en la cabecera de una columna para ordenar.</p><div class="table-wrap"><table class="prices sortable"><thead><tr><th>Provincia</th><th class="num" data-sort="a">Diésel hoy</th><th class="num" data-sort="b">Diésel 7 días</th><th class="num" data-sort="c">Diésel 30 días</th><th class="num" data-sort="d">G95 7 días</th><th class="num" data-sort="e">G95 30 días</th></tr></thead><tbody>${PROVS.slice().sort((a, b) => a.name.localeCompare(b.name, 'es')).map(p => { const v = [HP.at(-1).pr[p.id]?.[1], provChange(p.id, 1, 7), provChange(p.id, 1, 30), provChange(p.id, 0, 7), provChange(p.id, 0, 30)]; return `<tr><td><a href="/provincia/${p.slug}/">${p.name}</a></td>${v.map((x, i) => `<td class="num${i && x != null ? (x < -0.0005 ? ' cheap' : x > 0.0005 ? ' dear' : '') : ''}" data-v="${x ?? 99}">${x == null ? '—' : i ? cents(x) : eur2(x)}</td>`).join('')}</tr>`; }).join('')}</tbody></table></div>` : '';
+  const reports = BLOG.filter(b => b.report).slice(0, 4);
   write('evolucion-precios/index.html', layout({
     title: `Evolución del precio de la gasolina y el diésel en España | ${cfg.siteName}`,
     description: 'Gráfico con la evolución diaria del precio medio de la gasolina 95 y el diésel en España, con los datos oficiales del Ministerio.',
     canonical: '/evolucion-precios/', crumbs: [['Evolución de precios', null]],
-    body: `<h1>Evolución del precio de la gasolina y el diésel</h1><p class="lead">Precio medio diario en España, calculado con los precios oficiales de todas las gasolineras.</p>${updated}${chart}${ad('top')}
+    body: `<h1>Evolución del precio de la gasolina y el diésel</h1><p class="lead">Precio medio diario en España, calculado con los precios oficiales de todas las gasolineras.</p>${updated}${chart}${ad('top')}${provTable}
+${reports.length ? `<h2>Informes semanales</h2><ul class="guides">${reports.map(b => `<li><a href="/blog/${b.slug}/"><strong>${esc(b.title)}</strong><span>${esc(b.description)}</span></a></li>`).join('')}</ul>` : ''}
+<h2>Precio medio de los últimos 30 días</h2>
 <div class="table-wrap"><table class="prices"><thead><tr><th>Fecha</th>${MAIN.map(k => `<th class="num">${FUEL[k].short}</th>`).join('')}</tr></thead><tbody>${HIST.slice(-30).reverse().map(h => `<tr><td>${h.d.split('-').reverse().join('/')}</td>${MAIN.map(k => `<td class="num">${eur2(h[k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>${ad('bottom')}`
   }));
   addUrl('/evolucion-precios/', '0.8');
@@ -521,6 +604,42 @@ ${ad('inContent')}
   }));
   addUrl('/cerca/', '0.9');
 
+  // ------------------------------------------------ calculadora: ¿me compensa ir a una gasolinera más barata?
+  {
+    const pr = NAT.ga.avg, cons = 6.5, L = 40;
+    const kmMax = dif => dif * L / (cons / 100 * (pr - dif));
+    const ej = [0.03, 0.05, 0.10, 0.15, 0.20].map(dif => `<tr><td>${Math.round(dif * 100)} céntimos</td><td class="num">${(dif * L).toFixed(2).replace('.', ',')} €</td><td class="num"><strong>${kmMax(dif).toFixed(0)} km</strong></td><td class="num">${(kmMax(dif) / 2).toFixed(0)} km</td></tr>`).join('');
+    const faq = [
+      ['¿Cuántos kilómetros merece la pena desviarse para repostar más barato?', `Depende de la diferencia de precio, de los litros que eches y de lo que gaste tu coche. Con un consumo de ${String(cons).replace('.', ',')} l/100 km y 40 litros, una diferencia de 10 céntimos compensa hasta unos ${kmMax(0.10).toFixed(0)} km extra entre ida y vuelta (unos ${(kmMax(0.10) / 2).toFixed(0)} km de distancia).`],
+      ['¿Compensa ir a una gasolinera low cost que está lejos?', 'Si solo está a unos pocos kilómetros, casi siempre sí: la diferencia con las gasolineras de marca suele ser de 5 a 15 céntimos por litro. Si tienes que hacer un desvío largo solo para repostar, usa la calculadora para comprobarlo.'],
+      ['¿La calculadora tiene en cuenta el tiempo?', 'No. Calcula solo el combustible que gastas en el desvío. Si además valoras tu tiempo, piensa que un desvío corto aprovechando un trayecto que ya ibas a hacer es lo que más compensa.']
+    ];
+    write('calculadora-ahorro/index.html', layout({
+      title: `¿Me compensa ir a una gasolinera más barata? Calculadora | ${cfg.siteName}`,
+      description: 'Calcula si te compensa desviarte hasta una gasolinera más barata: ahorro al repostar, gasto del desvío y los kilómetros máximos que merece la pena hacer.',
+      canonical: '/calculadora-ahorro/', crumbs: [['Calculadora de ahorro', null]],
+      body: `<h1>¿Me compensa ir a una gasolinera más barata?</h1>
+<p class="lead">Una gasolinera más barata solo ahorra dinero si el combustible que gastas en llegar hasta ella cuesta menos que lo que ahorras al repostar. Mete tus datos y te lo calculamos al momento.</p>
+<form id="calc" class="calc" onsubmit="return false">
+<label>Precio en tu gasolinera habitual <span><input type="number" step="0.001" min="0" name="a" value="${pr.toFixed(3)}" inputmode="decimal"> €/l</span></label>
+<label>Precio en la gasolinera más barata <span><input type="number" step="0.001" min="0" name="b" value="${(pr - 0.08).toFixed(3)}" inputmode="decimal"> €/l</span></label>
+<label>Litros que vas a echar <span><input type="number" step="1" min="1" name="l" value="${L}" inputmode="numeric"> l</span></label>
+<label>Kilómetros de más (ida y vuelta) <span><input type="number" step="0.5" min="0" name="km" value="8" inputmode="decimal"> km</span></label>
+<label>Consumo de tu coche <span><input type="number" step="0.1" min="1" name="c" value="${cons}" inputmode="decimal"> l/100 km</span></label>
+</form>
+<div id="calc-out" class="calc-out" aria-live="polite"></div>
+${ad('top')}
+<section class="prose"><h2>Cómo se calcula</h2>
+<p>El ahorro al repostar es la diferencia de precio por litro multiplicada por los litros que echas. El gasto del desvío son los kilómetros de más multiplicados por el consumo de tu coche y por el precio del combustible. Si el ahorro es mayor que el gasto, te compensa.</p>
+<p>Por ejemplo, con el diésel a ${eur(pr)} de media, 40 litros y un coche que gasta ${String(cons).replace('.', ',')} litros a los 100 km, estos son los kilómetros de más que puedes hacer antes de perder dinero:</p></section>
+<div class="table-wrap"><table class="prices"><thead><tr><th>Diferencia de precio</th><th class="num">Ahorro en 40 l</th><th class="num">Km de más (ida y vuelta)</th><th class="num">Distancia máxima</th></tr></thead><tbody>${ej}</tbody></table></div>
+<section class="prose"><p>La conclusión es clara: <strong>casi siempre compensa ir a una gasolinera más barata que esté cerca</strong>, y en cambio no merece la pena hacer un viaje largo solo para ahorrar un par de céntimos. Lo ideal es repostar en la más barata que te pille de camino. Para encontrarla, usa <a href="/cerca/">gasolineras cerca de mí</a> o busca tu municipio.</p>
+<h2>Preguntas frecuentes</h2>${faqHtml(faq)}</section>${ad('bottom')}`,
+      jsonld: [{ '@context': 'https://schema.org', '@type': 'WebApplication', name: 'Calculadora de ahorro en gasolina', applicationCategory: 'UtilitiesApplication', operatingSystem: 'Web', offers: { '@type': 'Offer', price: '0', priceCurrency: 'EUR' }, url: BASE + '/calculadora-ahorro/' }, faqLd(faq)]
+    }));
+    addUrl('/calculadora-ahorro/', '0.8');
+  }
+
   // ------------------------------------------------ guías y blog
   write('guias/index.html', layout({ title: `Guías para ahorrar en gasolina | ${cfg.siteName}`, description: 'Guías prácticas para gastar menos en combustible: cuándo repostar, cómo conducir, descuentos y qué combustible elegir.', canonical: '/guias/', crumbs: [['Guías', null]], body: `<h1>Guías para ahorrar en combustible</h1>${ad('top')}<ul class="guides">${GUIDES.map(guideLi).join('')}</ul>${ad('bottom')}` }));
   addUrl('/guias/', '0.7');
@@ -533,7 +652,7 @@ ${ad('inContent')}
   write('blog/index.html', layout({ title: `Blog: actualidad del precio de los carburantes | ${cfg.siteName}`, description: 'Noticias y análisis sobre el precio de la gasolina y el diésel en España.', canonical: '/blog/', crumbs: [['Blog', null]], body: `<h1>Blog</h1>${ad('top')}<ul class="guides">${BLOG.map(blogLi).join('')}</ul>${ad('bottom')}` }));
   addUrl('/blog/', '0.6');
   for (const b of BLOG) {
-    write(`blog/${b.slug}/index.html`, layout({ title: `${b.title} | ${cfg.siteName}`, description: b.description.slice(0, 158), canonical: `/blog/${b.slug}/`, crumbs: [['Blog', '/blog/'], [b.title, null]], body: `<article class="prose guide"><h1>${esc(b.title)}</h1><p class="lead">${esc(b.description)}</p><p class="muted">Publicado el ${fmtFecha(b.date)}</p><img class="g-banner" src="/img/blog/${b.slug}.svg" alt="" width="640" height="280">${ad('top')}${md(b.md)}</article>${ad('bottom')}`, jsonld: [{ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: b.title, datePublished: b.date, author: { '@type': 'Organization', name: cfg.siteName }, mainEntityOfPage: `${BASE}/blog/${b.slug}/` }] }));
+    write(`blog/${b.slug}/index.html`, layout({ title: `${b.title} | ${cfg.siteName}`, description: b.description.slice(0, 158), canonical: `/blog/${b.slug}/`, crumbs: [['Blog', '/blog/'], [b.title, null]], body: `<article class="prose guide"><h1>${esc(b.title)}</h1><p class="lead">${esc(b.description)}</p><p class="muted">Publicado el ${fmtFecha(b.date)}</p><img class="g-banner" src="/img/blog/${b.slug}.svg" alt="" width="640" height="280">${ad('top')}${b.html || md(b.md)}</article>${b.report ? `<h2>Informes anteriores</h2><ul class="guides">${BLOG.filter(x => x.report && x !== b).slice(0, 4).map(blogLi).join('')}</ul>` : ''}${ad('bottom')}`, jsonld: [{ '@context': 'https://schema.org', '@type': 'BlogPosting', headline: b.title, datePublished: b.date, author: { '@type': 'Organization', name: cfg.siteName }, mainEntityOfPage: `${BASE}/blog/${b.slug}/` }] }));
     addUrl(`/blog/${b.slug}/`, '0.6');
   }
 

@@ -87,3 +87,23 @@ document.addEventListener('click', ev => {
   f.querySelector('img').src = `${f.dataset.base}-${b.dataset.k}.svg`;
   f.querySelectorAll('.map-legend').forEach(l => { l.hidden = l.dataset.k !== b.dataset.k; });
 });
+
+// calculadora: ¿me compensa ir a una gasolinera más barata?
+(() => {
+  const f = document.getElementById('calc'); if (!f) return;
+  const out = document.getElementById('calc-out');
+  const qs = new URLSearchParams(location.search);
+  for (const k of ['a', 'b', 'km', 'l', 'c']) if (qs.get(k)) f.elements[k].value = qs.get(k);
+  const e2 = v => v.toFixed(2).replace('.', ',') + ' €';
+  const calc = () => {
+    const n = k => parseFloat(String(f.elements[k].value).replace(',', '.')) || 0;
+    const a = n('a'), b = n('b'), l = n('l'), km = n('km'), c = n('c');
+    if (!a || !b || !l || !c) { out.innerHTML = ''; return; }
+    const ahorro = (a - b) * l, gasto = km * c / 100 * b, neto = ahorro - gasto, max = ahorro > 0 ? ahorro / (c / 100 * b) : 0;
+    const ok = neto > 0.005;
+    out.className = 'calc-out ' + (ok ? 'yes' : 'no');
+    out.innerHTML = `<p class="calc-verdict">${ahorro <= 0 ? 'La segunda gasolinera no es más barata: no te compensa.' : ok ? `✅ Sí te compensa: ahorras <strong>${e2(neto)}</strong>` : `❌ No te compensa: pierdes <strong>${e2(-neto)}</strong>`}</p>
+<dl><dt>Ahorro al repostar</dt><dd>${e2(Math.max(ahorro, 0))}</dd><dt>Gasto del desvío</dt><dd>${e2(gasto)}</dd><dt>Km de más que compensan como máximo</dt><dd>${max.toFixed(1).replace('.', ',')} km (ida y vuelta)</dd></dl>`;
+  };
+  f.addEventListener('input', calc); calc();
+})();

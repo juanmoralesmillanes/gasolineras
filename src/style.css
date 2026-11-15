@@ -268,3 +268,16 @@ svg.map a:hover circle{stroke:#10261b;stroke-width:2}
 .g-banner{width:100%;height:auto;border-radius:var(--r);display:block;margin:4px 0 20px;aspect-ratio:640/280}
 .btn{text-align:center}
 @media (max-width:560px){.stat{padding-right:14px}.stat>span{padding-right:34px}.f-ico{width:28px;height:28px;right:10px;top:10px}}
+/* ---- calculadora */
+.calc{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:16px;box-shadow:var(--shadow);margin:14px 0}
+.calc label{display:flex;flex-direction:column;gap:6px;font-size:.92rem;color:var(--muted)}
+.calc label span{display:flex;align-items:center;gap:8px;color:var(--text)}
+.calc input{font:inherit;font-size:1.1rem;width:100%;max-width:150px;padding:8px 10px;border:1px solid var(--line);border-radius:10px}
+.calc input:focus{outline:2px solid var(--accent);border-color:transparent}
+.calc-out{border-radius:var(--r);padding:16px 18px;margin:0 0 20px;border:1px solid var(--line);background:#fff}
+.calc-out.yes{background:#e6f6ee;border-color:#a7dcc0}.calc-out.no{background:#fdecec;border-color:#f3b8b8}
+.calc-verdict{font-size:1.25rem;margin:0 0 10px;text-align:left!important}
+.calc-out dl{display:grid;grid-template-columns:auto 1fr;gap:6px 16px;margin:0;font-size:.95rem}
+.calc-out dt{color:var(--muted)}.calc-out dd{margin:0;font-weight:700;font-variant-numeric:tabular-nums}
+.hero-btns{display:flex;flex-wrap:wrap;gap:10px}
+.bad{color:#b42318}

@@ -116,3 +116,22 @@ export function cover(slug, { icon = iconFor(slug) } = {}) {
   const [a, b] = PALETTES[h % PALETTES.length];
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 280"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="640" height="280" fill="url(#g)"/><circle cx="${80 + h % 200}" cy="60" r="90" fill="#fff" opacity=".05"/><circle cx="560" cy="250" r="140" fill="#fff" opacity=".05"/><g stroke="#fff" stroke-opacity=".18" stroke-width="6" stroke-dasharray="30 24"><path d="M0 250 H640"/></g><g transform="translate(220 40)">${ICONS[icon]}</g></svg>`;
 }
+
+// ---------------------------------------------------------------- líneas de evolución
+// series: [{ name, color, dash, pts: [[ 'aaaa-mm-dd', valor ], ...] }]
+export function lineChart(series, { label = '', W = 760, H = 260 } = {}) {
+  const all = series.flatMap(s => s.pts.filter(p => p[1]));
+  const days = [...new Set(all.map(p => p[0]))].sort();
+  if (days.length < 2) return '';
+  const pad = { l: 46, r: 14, t: 14, b: 30 };
+  let lo = Math.min(...all.map(p => p[1])), hi = Math.max(...all.map(p => p[1]));
+  const span = Math.max(hi - lo, 0.04); lo -= span * 0.12; hi += span * 0.12;
+  const idx = new Map(days.map((d, i) => [d, i]));
+  const X = d => pad.l + idx.get(d) * (W - pad.l - pad.r) / (days.length - 1);
+  const Y = v => pad.t + (hi - v) * (H - pad.t - pad.b) / (hi - lo);
+  const ticks = [0, 0.5, 1].map(f => lo + (hi - lo) * (0.1 + f * 0.8)).map(v => `<line x1="${pad.l}" x2="${W - pad.r}" y1="${n1(Y(v))}" y2="${n1(Y(v))}" class="grid"/><text x="${pad.l - 6}" y="${n1(Y(v) + 4)}" text-anchor="end" class="ax">${v.toFixed(3).replace('.', ',')}</text>`).join('');
+  const fd = d => d.slice(8, 10) + '/' + d.slice(5, 7);
+  const xt = [days[0], days[Math.floor((days.length - 1) / 2)], days.at(-1)].map((d, i) => `<text x="${n1(X(d))}" y="${H - 8}" text-anchor="${['start', 'middle', 'end'][i]}" class="ax">${fd(d)}</text>`).join('');
+  const lines = series.map(s => { const p = s.pts.filter(q => q[1]); if (!p.length) return ''; return `<path d="${p.map((q, i) => `${i ? 'L' : 'M'}${n1(X(q[0]))},${n1(Y(q[1]))}`).join('')}" stroke="${s.color}" stroke-width="${s.dash ? 2 : 2.8}" fill="none"${s.dash ? ' stroke-dasharray="6 5"' : ''} stroke-linejoin="round"/>${p.length <= 40 ? p.map(q => `<circle cx="${n1(X(q[0]))}" cy="${n1(Y(q[1]))}" r="${s.dash ? 0 : 2.6}" fill="${s.color}"><title>${fd(q[0])}: ${q[1].toFixed(3).replace('.', ',')} €</title></circle>`).join('') : ''}`; }).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${label}">${ticks}${lines}${xt}</svg><p class="legend">${series.map(s => `<span style="color:${s.color}">${s.dash ? '╌╌' : '━━'} ${s.name}</span>`).join(' ')}</p>`;
+}
