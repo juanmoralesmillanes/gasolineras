@@ -140,7 +140,7 @@ function provEvol(p) {
   if (pts.length < 3) return '';
   const c7g = provChange(p.id, 0, 7), c7d = provChange(p.id, 1, 7), c30d = provChange(p.id, 1, 30);
   const s1 = [c7d != null ? `En la última semana el diésel ${Math.abs(c7d) < 0.0005 ? 'se ha mantenido estable' : c7d < 0 ? `ha bajado ${cents(-c7d).replace('+', '')}` : `ha subido ${cents(c7d).replace('+', '')}`} en ${p.name}` : '', c7g != null ? `la gasolina 95 ${Math.abs(c7g) < 0.0005 ? 'apenas se ha movido' : c7g < 0 ? `ha bajado ${cents(-c7g).replace('+', '')}` : `ha subido ${cents(c7g).replace('+', '')}`}` : ''].filter(Boolean).join(' y ');
-  const txt = (s1 ? s1 + '.' : '') + (c30d != null ? ` En los últimos 30 días, el diésel acumula ${cents(c30d)} por litro.` : '');
+  const txt = (s1 ? s1.replace(/\.?$/, '.') : '') + (c30d != null ? ` En los últimos 30 días, el diésel acumula ${cents(c30d)} por litro.` : '');
   return `<h2>Evolución del precio en ${p.name}</h2><p>Precio medio diario de la gasolina 95 y el diésel en la provincia (línea continua) comparado con la media de España (línea discontinua). ${txt}</p>
 ${lineChart([{ name: `Gasolina 95 en ${p.name}`, color: '#0f9d58', pts: pts.map(h => [h.d, h.pr[p.id][0]]) }, { name: `Diésel en ${p.name}`, color: '#ff8a00', pts: pts.map(h => [h.d, h.pr[p.id][1]]) }, { name: 'Gasolina 95 en España', color: '#0f9d58', dash: true, pts: pts.map(h => [h.d, h.g95]) }, { name: 'Diésel en España', color: '#ff8a00', dash: true, pts: pts.map(h => [h.d, h.ga]) }], { label: `Evolución del precio de la gasolina en ${p.name}` })}`;
 }
