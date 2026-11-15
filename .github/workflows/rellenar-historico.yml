@@ -11,13 +11,15 @@ concurrency: precios
 jobs:
   rellenar:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
       - name: Descargar el histórico oficial día a día
+        timeout-minutes: 150
+        continue-on-error: true
         run: node scripts/historico-atras.mjs "${{ github.event.inputs.dias }}"
       - name: Guardar
         if: always()
